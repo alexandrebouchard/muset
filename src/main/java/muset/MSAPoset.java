@@ -2,8 +2,6 @@ package muset;
 
 
 import java.io.File;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -12,10 +10,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
@@ -26,12 +22,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 
-import bayonet.math.NumericalUtils;
-import bayonet.math.SpecialFunctions;
 import briefj.BriefCollections;
 import briefj.BriefIO;
 import briefj.BriefMaps;
-import briefj.BriefMath;
 import briefj.BriefStrings;
 import briefj.collections.Counter;
 
@@ -199,44 +192,7 @@ public class MSAPoset implements Serializable
       }
     return result;
   }
-  
-//  public static MSAPoset parseAlnOrMsfFormats(File f)
-//  {
-//    return fromMultiAlignmentObject(MultiAlignment.parse(f.getAbsolutePath()));
-//  }
-//  
-//  public static MSAPoset fromMultiAlignmentObject(MultiAlignment ma)
-//  {
-//    return _fromMultiAlignmentObject(ma, false);
-//  }
-//  
-//  public static MSAPoset coreBlocksFromMultiAlignmentObject(MultiAlignment ma)
-//  {
-//    return _fromMultiAlignmentObject(ma, true);
-//  }
-//  
-//  private static MSAPoset _fromMultiAlignmentObject(MultiAlignment ma, boolean keepOnlyRef)
-//  {
-//    MSAPoset result = new MSAPoset(ma.getSequences());
-//    for (SequenceCoordinate sc : ma.eqClasses().representatives())
-//      if (!keepOnlyRef || sc.isCoreBlock())
-//        for (SequenceCoordinate other : ma.eqClasses().eqClass(sc))
-//          if (!other.equals(sc))
-//          {
-//            if (keepOnlyRef && sc.isCoreBlock() != other.isCoreBlock())
-//              throw new RuntimeException("The old format, based on annotation files," +
-//              		" assumes that columns are either all or all not core block links.");
-//            final Edge currentEdge = new Edge(
-//                sc.indexInSequence(),  other.indexInSequence(),
-//                sc.getNodeIdentifier(),other.getNodeIdentifier());
-//            if (!result.tryAdding(currentEdge))
-//              throw new RuntimeException();
-//          }
-//    return result;
-//  }
-  
-  
-  
+
   public Map<SequenceId,String> sequences() 
   {
     return Collections.unmodifiableMap(sequences);
@@ -252,23 +208,7 @@ public class MSAPoset implements Serializable
     return sequences.get(first ? e.lang1() : e.lang2())
       .charAt(first ? e.index1() : e.index2());
   }
-  
-//  public static void save(MSAPoset msa, File file)
-//  {
-//    ObjectOutputStream out = IOUtils.openBinOutHard(file);
-//    try  {
-//      out.writeObject(msa);
-//      out.close();
-//    } catch (Exception e) { throw new RuntimeException(e); }
-//  }
-//  
-//  public static MSAPoset restore(File filePath) 
-//  {
-//    try{
-//    ObjectInputStream ois = IOUtils.openBinIn(filePath);
-//    return (MSAPoset) ois.readObject();
-//    } catch (Exception e) { throw new RuntimeException(e); }
-//  }
+ 
   
   public static boolean isValidSplit(Column c, Set<SequenceId> keepInCurrent)
   {
@@ -373,24 +313,6 @@ public class MSAPoset implements Serializable
     }
     
   }
-  
-
-  
-
-
-//  public static int _testArcs(MSAPoset msa)
-//  {
-//    int nProblems = 0;
-//    for (Column c : msa.poset.nodes())
-//      for (Column c2 : msa.poset.next(c))
-//        if (!intersects(c.getPoints().keySet(), c2.getPoints().keySet()))
-//        {
-//          System.out.println("Problem:" + c.getPoints() + " and " + c2.getPoints());
-//          nProblems++;
-//        }
-////    System.out.println("N problems: " + nProblems);
-//    return nProblems;
-//  }
   
   public boolean containsEdge(Edge e)
   {
@@ -591,28 +513,6 @@ public class MSAPoset implements Serializable
     if (b) return columnMaps.get(alignmentLink.lang1())[alignmentLink.index1()];
     else   return columnMaps.get(alignmentLink.lang2())[alignmentLink.index2()];
   }
-  
-//  public MultiAlignment toMultiAlignmentObject()
-//  {
-//    MultiAlignment result = new MultiAlignment(sequences);
-//    for (Column c : linearizedColumns.keySet()) //poset.nodes())
-//    {
-//      for (Edge e : c.spanningEdges())
-//        result.addAlign(e.lang1(), e.index1(), e.lang2(), e.index2());
-//    }
-//    return result;
-//  }
-  
-  private Set<SequenceId> languagesAtOtherEndOfArc(Column reference, Pair<Column,Column> arc)
-  {
-         if (arc.getLeft() == reference)
-      return arc.getRight().points.keySet();
-    else if (arc.getRight() == reference)
-      return arc.getLeft().points.keySet();
-    else
-      throw new RuntimeException();
-  }
-
   
   public Column column(SequenceId lang, int index)
   {
@@ -891,209 +791,7 @@ public class MSAPoset implements Serializable
     result.enableLinearization();
     return result;
   }
-//  /**
-//   * keeps only capitalized links, then capitalize everything
-//   * @param msa
-//   * @return
-//   * @deprecated
-//   */
-//  public static MSAPoset _processBenchmarkReference(MSAPoset msa)
-//  {  
-//    System.out.println("Warning! Using legacy implementation!");
-//    MSAPoset result = new MSAPoset(msa.sequences);
-//    for (Edge e : msa.edges())
-//      if (Character.isUpperCase(msa.charAt(e, true)) &&
-//          Character.isUpperCase(msa.charAt(e, false)))
-//        result.tryAdding(e);
-//    for (Taxon lang : result.taxa())
-//      result.sequences.put(lang, result.sequences.get(lang).toUpperCase());
-//    return result;
-//  }
-  
-//  public static class SaveMSAPoset implements Runnable
-//  {
-//    @Option public File path = null;
-//    public static void main(String [] args)
-//    {
-//      IO.runLight(args, new SaveMSAPoset());
-//    }
-//
-//    @Override
-//    public void run()
-//    {
-//      int n = Integer.MAX_VALUE;
-//      MSAPoset msa = 
-//        PreprocessGutellData.randomDataSet(new File("/Users/bouchard/Documents/data/gutell/16S.3.alnfasta"), 1, n, new Random(1)).get(0);
-//      File outFile = new File(path.getAbsolutePath() + ".bin");
-//      
-//      System.gc();System.gc();System.gc();System.gc();System.gc();
-//      System.out.println("" + n + "\t" + Runtime.getRuntime().totalMemory()/1024.0/1024.0 + "");
-//      
-//      MSAPoset.save(msa, outFile);
-//      
-//      System.out.println("Done");
-//    }
-//  }
-//  
 
-//  public static void main(String [] args)
-//  {
-//    
-////    MSAPoset read = parseAlnOrMsfFormats(new File(args[0]));
-////    
-////    System.out.println(read);
-////    
-////    if (true) return;
-////    
-////    {
-//////      PreprocessG(new File("/Users/bouchard/Downloads/5S.3.alnfasta"));
-//////      System.out.println(msa);
-//////      if (true) return;
-////    }
-//    
-////    {
-////      MSAPoset msa = parseFASTA(new File("/Users/bouchard/w/evolvere/data/bench1.0/bali2dna/ref/1aab_ref1"));
-//////      System.out.println(msa);
-//////      msa = keepOnlyEdgesBetweenCapitalizedSymbols(msa);
-//////      System.out.println(msa);
-//////      msa = capitalize(msa);
-//////      System.out.println(msa);
-//////      if (true) return; 
-////    }
-////    
-//    
-////    {
-////      BalibaseCorpusOptions baliopt = new BalibaseCorpusOptions();
-////      baliopt.referenceAlignmentsPath.clear();
-////      File path = new File("data/BAliBASE/ref1/test1/");
-////      baliopt.referenceAlignmentsPath.add(path.getAbsolutePath());
-////      path = new File("data/BAliBASE/ref1/test2/");
-////      baliopt.referenceAlignmentsPath.add(path.getAbsolutePath());
-////      path = new File("data/BAliBASE/ref1/test3/");
-////      baliopt.referenceAlignmentsPath.add(path.getAbsolutePath());
-////      path = new File("data/BAliBASE/ref2/test/");
-////      baliopt.referenceAlignmentsPath.add(path.getAbsolutePath());
-////      path = new File("data/BAliBASE/ref3/test/");
-////      baliopt.referenceAlignmentsPath.add(path.getAbsolutePath());
-////      path = new File("data/BAliBASE/ref4/test/");
-////      baliopt.referenceAlignmentsPath.add(path.getAbsolutePath());
-////      path = new File("data/BAliBASE/ref5/test/");
-////      baliopt.referenceAlignmentsPath.add(path.getAbsolutePath());
-//////      for (String arg :args)
-//////        baliopt.referenceAlignmentsPath.add(arg);
-////      final BalibaseCorpus bc = new BalibaseCorpus(baliopt);
-////      Random rand = new Random(1);
-////      for (CognateId id : bc.intersectedIds())
-////      {
-////        MSAPoset gold = MSAPoset.coreBlocksFromMultiAlignmentObject(bc.getMultiAlignment(id));
-////        System.out.println(id);
-////        System.out.println("Gold:\n" + gold);
-////        // construct a random align
-////        MSAPoset randomGuess = new MSAPoset(gold.sequences());
-////        for (int i = 0; i < 100; i++)
-////        {
-////          Taxon l1 = Sampling.randomElt(gold.taxa(), rand),
-////                   l2 = Sampling.randomElt(gold.taxa(), rand);
-////          int i1= rand.nextInt(gold.sequences().get(l1).length()),
-////              i2= rand.nextInt(gold.sequences().get(l2).length());
-////          randomGuess.tryAdding(new Edge(i1,i2,l1,l2));
-////          randomGuess.tryAdding(Sampling.randomElt(gold.edges(), rand));
-////        }
-////        System.out.println("Random guess:\n" + randomGuess); double oldv, newv;
-////        System.out.println("SP (old way): " + (oldv=gold.toMultiAlignmentObject().sumOfPairsScore(randomGuess.toMultiAlignmentObject())));
-////        System.out.println("SP (new way): " + (newv=edgeRecall(gold, randomGuess)));
-////        if (!MathUtils.close(oldv,newv))
-////          throw new RuntimeException();
-////      }
-////    }
-//    
-//    
-////    System.out.println(restore(new File(args[0])));
-//    int maxL = 9;
-//    Random rand = new Random(1);
-//    int nLangs = 10;
-//    
-////    int maxL = 3;
-////    Random rand = new Random(1);
-////    int nLangs = 3;
-//    
-//    Map<Taxon,String> seqs= Maps.newLinkedHashMap();
-//    for (int i =0 ; i < nLangs; i++)
-//    {
-//      Taxon l = new Taxon("l" + i);
-//      String word = "";
-//      for (int w = 0; w < maxL; w++)
-//        word += w;
-//      seqs.put(l, word);
-//    }
-//    MSAPoset msa = new MSAPoset(seqs);
-//    System.out.println(msa);
-//    List<Taxon> list = new ArrayList<Taxon>(seqs.keySet());
-//    int id = 0;
-//    for (int i = 0; i < 1000000; i ++)
-//    {
-////      System.out.println(msa.linearizedLocations);
-////      new MSAPoset(msa);
-////      if (i==4)
-////        System.out.println("debug");
-//      Taxon l1 = list.get(rand.nextInt(list.size())),
-//               l2 = list.get(rand.nextInt(list.size()));
-//      int i1 = rand.nextInt(seqs.get(l1).length()),
-//          i2 = rand.nextInt(seqs.get(l2).length());
-//      Edge e = new Edge(i1,i2,l1,l2);
-//      if (i % 10000 == 0)
-//        System.out.println(i+" Trying to add edge: " + e);
-//      
-//      MultiAlignment bu = msa.toMultiAlignmentObject();
-//      boolean test = msa.isValidAddition(e);
-//      if (!bu.equals(msa.toMultiAlignmentObject()))
-//        throw new RuntimeException();
-//      
-//      boolean success = msa.tryAdding(e);
-//      if (_testArcs(msa) > 0)
-//        throw new RuntimeException("Sanity failed after insert. ID:" + id);
-//      id++;
-//      if (success != test)
-//        throw new RuntimeException();
-//    if (i % 10000 == 0)
-//    {
-//      System.out.println("Success: " + success);
-//
-//        System.out.println("New align:\n" + msa);
-//      System.out.println();
-//    }
-//      
-//        
-//      if (i % 2 == 0)
-//      {
-//        List<Column> cols = Lists.newArrayList();
-//        for (Column c : msa.linearizedColumns.keySet())
-//          if (c.points.size() > 1)
-//            cols.add(c);
-//        if (cols.size() > 1)
-//        {
-//          Column c = cols.get(rand.nextInt(cols.size()));
-//          Set<Taxon> toKeep = Sets.newLinkedHashSet(); 
-//          Queue<Taxon> available = new LinkedList<Taxon>(c.points.keySet());
-//          toKeep.add(available.poll());
-//          available.poll();
-//          for (Taxon lang : available)
-//            if (rand.nextBoolean())
-//              toKeep.add(lang);
-//          if (i % 10000 == 0)
-//            System.out.println("Splitting(" + c.points + "," + toKeep+")");
-//          msa.split(c, toKeep);
-//          if (_testArcs(msa) > 0)
-//            throw new RuntimeException("Sanity failed after split");
-//          if (i % 10000 == 0)
-//          {
-//          System.out.println("New align:\n" + msa);
-//          System.out.println();
-//          }
-//        }
-//      }
-//    }
-//  }
   
   public void toFASTA(File f)
   {
@@ -1163,12 +861,7 @@ public class MSAPoset implements Serializable
       else if (len != alignData.get(lang).size())
         throw new RuntimeException("Invalid alignment spec: " +
         		"all gap-padded seqns should have the len");
-//      if (len != stringData.get(lang).length())
-//        throw new RuntimeException();
     }
-    
-//    System.out.println("Got here2");
-    
     
     List<SequenceId> langs = Lists.newArrayList(alignData.keySet());
     for (int p = 0; p < len; p++)
