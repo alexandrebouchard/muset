@@ -96,122 +96,6 @@ public class TopoSort
     return list;
   }
   
-//  private static final class OnlineSorter<T>
-//  {
-//    private final PartialOrder<T> po;
-//    private final T x, y;
-//    private final Map<T,Integer> n2i;
-//    private final int lb, ub;
-//    
-//    public OnlineSorter(PartialOrder<T> po, T x, T y, Map<T, Integer> n2i)
-//    {
-//      this.po = po;
-//      this.x = x;
-//      this.y = y;
-//      this.n2i = n2i;
-//      this.lb = n2i.get(y);
-//      this.ub = n2i.get(x);
-//    }
-//
-//    private final Set<T> 
-//      fwd = new HashSet<T>(),
-//      bwd = new HashSet<T>();
-//    
-//    private boolean doIt()
-//    {
-//      if (ub < lb) 
-//        return true;
-//      //
-//      if (!fwd2(y)) return false;
-//      bwd2(x);
-//      reassign();
-//      return true;
-//    }
-//    
-//    private void reassign()
-//    {
-//      List<Pair<T,Integer>> 
-//        spfwd = sortedPairedList(fwd, n2i),
-//        spbwd = sortedPairedList(bwd, n2i);
-//      // merged contains the indices of the positions in which thing will be inserted
-//      List<Integer> merged = new ArrayList<Integer>();
-//      for (Pair<T,Integer> p : spfwd)
-//        merged.add(p.getRight());
-//      for (Pair<T,Integer> p : spbwd)
-//        merged.add(p.getRight());
-//      Collections.sort(merged);
-//      int currentIdxIdx = 0;
-//      for (Pair<T,Integer> cur : spbwd)
-//        n2i.put(cur.getLeft(), merged.get(currentIdxIdx++));
-//      for (Pair<T,Integer> cur : spfwd)
-//        n2i.put(cur.getLeft(), merged.get(currentIdxIdx++));
-//    }
-//
-//
-//
-////    private boolean fwd(T node)
-////    {
-////      fwd.add(node);
-////      for (T next : po.next(node))
-////      {
-////        final int nextPos = n2i.get(next);
-////        if (nextPos == ub) return false;
-////        if (!fwd.contains(next) && nextPos < ub)
-////          if (!fwd(next))
-////            return false;
-////      }
-////      return true;
-////    }
-//    
-//    private boolean fwd2(T node)
-//    {
-//      Deque<T> deque = new ArrayDeque<T>();
-//      deque.add(node);
-//      while (!deque.isEmpty())
-//      {
-//        node = deque.pop();
-//        fwd.add(node);
-//        for (T next : po.next(node))
-//        {
-//          final int nextPos = n2i.get(next);
-//          if (nextPos == ub) return false;
-//          if (!fwd.contains(next) && nextPos < ub)
-//            deque.push(next);
-//        }
-//      }
-//      return true;
-//    }
-//    
-//    private void bwd2(T node)
-//    {
-//      Deque<T> deque = new ArrayDeque<T>();
-//      deque.add(node);
-//      while (!deque.isEmpty())
-//      {
-//        node = deque.pop();
-//        bwd.add(node);
-//        for (T prev : po.prev(node))
-//        {
-//          final int prevPos = n2i.get(prev);
-//          if (!bwd.contains(prev) && prevPos > lb)
-//            deque.push(prev);
-//        }
-//      }
-//    }
-//    
-////    private void bwd(T node)
-////    {
-////      bwd.add(node);
-////      for (T prev : po.prev(node))
-////      {
-////        final int prevPos = n2i.get(prev);
-////        if (!bwd.contains(prev) && prevPos > lb)
-////          bwd(prev);
-////      }
-////    }
-//  }
-  
-  
   public static <T> List<T> topologicalSort(PartialOrder<T> po)
   {
     Set<T> remaining = new HashSet<T>(po.nodes());
@@ -359,7 +243,7 @@ public class TopoSort
   
   public static <T> boolean isCorrectTopoSort(PartialOrder<T> po, List<T> proposed)
   {
-    Map<T,Integer> inverted= SupportFunctions.invert(proposed);
+    Map<T,Integer> inverted= SupportFunctions.invert(proposed); 
     for (T elt : proposed)
     {
       int current = inverted.get(elt);
