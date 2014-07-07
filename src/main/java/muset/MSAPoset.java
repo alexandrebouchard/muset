@@ -17,6 +17,7 @@ import java.util.TreeSet;
 
 import muset.util.Edge;
 import muset.util.ROCPoint;
+import muset.util.SupportFunctions;
 import muset.util.TopoSort;
 import muset.util.TopoSort.PartialOrder;
 
@@ -51,9 +52,9 @@ public class MSAPoset implements Serializable
 
   private final PartialOrder<Column> poset;
   private TreeSet<Double> linearizedLocations = new TreeSet<Double>();
-  private Map<Column,Double> linearizedColumns = Maps.newLinkedHashMap();
+  Map<Column,Double> linearizedColumns = Maps.newLinkedHashMap();
   private final Map<SequenceId,Column[]> columnMaps = Maps.newLinkedHashMap();
-  private final Map<SequenceId,String> sequences;
+  final Map<SequenceId,String> sequences;
   private final List<SequenceId> allSequenceIds;
   private boolean linearizationEnabled = true;
   
@@ -91,13 +92,13 @@ public class MSAPoset implements Serializable
     }
   }
   
-  private void disableLinearization()
+  void disableLinearization()
   {
     this.linearizationEnabled = false;
     this.linearizedLocations = null;
   }
   
-  private void enableLinearization()
+  void enableLinearization()
   {
     if (linearizationEnabled)
       return;
@@ -189,8 +190,8 @@ public class MSAPoset implements Serializable
         current++;
         if (current == totalNPoints || current % interval == 0)
           result.add(new ROCPoint(
-              edgePrecision(ref, currentGuess),
-              edgeRecall(ref, currentGuess),
+              Metrics.edgePrecision(ref, currentGuess),
+              Metrics.edgeRecall(ref, currentGuess),
               edgeCounter.getCount(e)));
       }
     return result;
@@ -213,7 +214,10 @@ public class MSAPoset implements Serializable
   {
     int result = 0;
     for (Column c : linearizedColumns.keySet())
-      result += CombinatoricsUtils.binomialCoefficient(c.points.size(), 2); 
+    {
+      int nPts = c.points.size();
+      result += nPts < 2 ? 0 : CombinatoricsUtils.binomialCoefficient(nPts, 2); 
+    }
     return result;
   }
   
@@ -588,7 +592,7 @@ public class MSAPoset implements Serializable
     return columnMaps.get(sequenceId)[index];
   }
   
-  private Set<Map<SequenceId,Integer>> points()
+  Set<Map<SequenceId,Integer>> points()
   {
     Set<Map<SequenceId,Integer>> result = Sets.newLinkedHashSet();
     for (Column c : linearizedColumns.keySet())
@@ -625,7 +629,7 @@ public class MSAPoset implements Serializable
   public static class Column implements Serializable
   {
     private static final long serialVersionUID = 1L;
-    private Map<SequenceId,Integer> points;
+    Map<SequenceId,Integer> points;
     
     /**
      * a map from sequenceId to a POSITION in the string
@@ -693,37 +697,9 @@ public class MSAPoset implements Serializable
     return Arrays.asList(all);
   }
   
-  /**
-   * 
-   * @return The average over pairs of sequences and character of identical linked characters.
-   */
-  public double getIdentityStatistic() { return basicStat(true); }
   
-  /**
-   * 
-   * @return The average over pairs of sequences and character of linked characters
-   */
-  public double getAlignedStatistics() { return basicStat(false);}
   
-  public double getMeanSequenceLength() 
-  {
-    SummaryStatistics result = new SummaryStatistics();
-    for (String seq : sequences().values())
-      result.addValue(seq.length());
-    return result.getMean();
-  }
-  
-  private double basicStat(boolean isIdentity)
-  {
-    SummaryStatistics stat = new SummaryStatistics();
-    for (SequenceId t1 : allSequenceIds())
-      for (SequenceId t2 : allSequenceIds())
-        if (!t1.equals(t2))
-          stat.addValue(basicStat(t1,t2,isIdentity));
-    return stat.getMean();
-  }
-  
-  private double basicStat(SequenceId t1, SequenceId t2, boolean isIdentity) // o.w., just check aligned
+  public double basicStat(SequenceId t1, SequenceId t2, boolean isIdentity) // o.w., just check aligned
   {
     SummaryStatistics stat = new SummaryStatistics();
     for (int i = 0; i < sequences().get(t1).length(); i++)
@@ -770,7 +746,7 @@ public class MSAPoset implements Serializable
   private StringBuilder [] createPaddedStrings(Set<SequenceId> restriction)
   {
     List<SequenceId> printOrder = printOrder(restriction);
-    Map<SequenceId,Integer> sequenceIdPrintOrder = invert(printOrder);
+    Map<SequenceId,Integer> sequenceIdPrintOrder = SupportFunctions.invert(printOrder);
     StringBuilder [] builders = new StringBuilder[printOrder.size()];
     
     for (SequenceId sequenceId : sequenceIdPrintOrder.keySet())
@@ -794,109 +770,6 @@ public class MSAPoset implements Serializable
     return builders;
   }
   
-  public static <T> Map<T,Integer> invert(List<T> list)
-  {
-    Map<T,Integer> result = new HashMap<T,Integer>();
-    for (int i =0; i < list.size(); i++)
-      result.put(list.get(i),i);
-    return result;
-  }
-
-  /**
-   * @param gold
-   * @param guess
-   * @return
-   */
-  public static double columnRecall(MSAPoset gold, MSAPoset guess)
-  {
-    Set<Map<SequenceId,Integer>> goldColumns = gold.points(),
-      guessColumns = guess.points();
-    double num = 0.0, denom = 0.0;
-    for (Map<SequenceId,Integer> goldColumn : goldColumns)
-      if (goldColumn.size() > 1) // in bali references, this will have the effect of only counting core blocks
-      {
-        denom++;
-        if (guessColumns.contains(goldColumn))
-          num++;
-      }
-    return num/denom;
-  }
-  
-  /**
-   * 
-   * @param gold
-   * @param guess
-   * @return
-   */
-  public static double edgeRecall(MSAPoset gold, MSAPoset guess)
-  {
-    double num = 0.0, denom = 0.0;
-    for (Edge e : gold.edges())
-    {
-      denom++;
-      if (guess.containsEdge(e))
-        num++;
-    }
-    return num/denom;
-  }
-  
-  /**
-   * 
-   * @param gold
-   * @param guess
-   * @return
-   */
-  public static double edgePrecision(MSAPoset gold, MSAPoset guess)
-  {
-    return edgeRecall(guess, gold);
-  }
-  
-  /**
-   * 
-   * @param gold
-   * @param guess
-   * @return
-   */
-  public static double edgeF1(MSAPoset gold, MSAPoset guess)
-  {
-    return f1Score(edgePrecision(gold, guess), edgeRecall(gold, guess));
-  }
-  
-  /**
-   * 
-   * @param precision
-   * @param recall
-   * @return
-   */
-  public static double f1Score(double precision, double recall)
-  {
-    if (precision + recall == 0.0) return 0.0;
-    return 2 * (precision * recall) / (precision + recall);
-  }
-  
-  /**
-   * keeps only capitalized links, then capitalize everything
-   * @param msa
-   * @return
-   */
-  public static MSAPoset processBenchmarkReference(MSAPoset msa)
-  {  
-    MSAPoset result = new MSAPoset(msa.sequences);
-    result.disableLinearization();
-    for (Column c : msa.linearizedColumns.keySet())
-    {
-      Map<SequenceId,Integer> processed = Maps.newLinkedHashMap();
-      for (SequenceId item : c.points.keySet())
-        if (Character.isUpperCase(msa.charAt(c, item)))
-          processed.put(item, c.points.get(item));
-        result.tryAdding(processed);
-    }
-    for (SequenceId sequenceId : result.allSequenceIds())
-      result.sequences.put(sequenceId, result.sequences.get(sequenceId).toUpperCase());
-    result.enableLinearization();
-    return result;
-  }
-
   /**
    * Save the alignment in fasta format.
    * 

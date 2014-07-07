@@ -2,7 +2,6 @@ package muset.util;
 import java.io.*;
 import java.util.*;
 
-import muset.MSAPoset;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -360,7 +359,7 @@ public class TopoSort
   
   public static <T> boolean isCorrectTopoSort(PartialOrder<T> po, List<T> proposed)
   {
-    Map<T,Integer> inverted= MSAPoset.invert(proposed);
+    Map<T,Integer> inverted= SupportFunctions.invert(proposed);
     for (T elt : proposed)
     {
       int current = inverted.get(elt);
@@ -380,7 +379,7 @@ public class TopoSort
     HashOrder<Set<Integer>> hashOrder = new HashOrder<Set<Integer>>(so.nodes());
     List<Set<Integer>> all = new ArrayList<Set<Integer>>(so.nodes());
     Random rand = new Random(1);
-    Map<Set<Integer>, Integer> current = MSAPoset.invert(topologicalSort(hashOrder));
+    Map<Set<Integer>, Integer> current = SupportFunctions.invert(topologicalSort(hashOrder));
     for (int i = 0; i < 1000; i++)
     {
       if (i == 42)
