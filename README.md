@@ -9,9 +9,9 @@ The main features are:
 
 1. MSAPoset, an efficient poset representation of MSAs, based on http://bioinformatics.oxfordjournals.org/content/23/2/e24.full
 2. Efficient and flexible pairwise alignment (max, sum, and sampling), based on alignment random fields
-  [http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-153.pdf]. 
+  http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-153.pdf 
 3. Variational inference algorithms for MSAs 
-  [http://papers.nips.cc/paper/4036-variational-inference-over-combinatorial-spaces.pdf]
+  http://papers.nips.cc/paper/4036-variational-inference-over-combinatorial-spaces.pdf
  
 Note: as of Jul 7 2014, 1. is operational, while code for 2 and 3 is being transferred from a legacy SVN library.
 
