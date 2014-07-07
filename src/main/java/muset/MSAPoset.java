@@ -16,7 +16,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
-import muset.TopoSort.PartialOrder;
+import muset.util.Edge;
+import muset.util.TopoSort;
+import muset.util.TopoSort.PartialOrder;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
@@ -34,8 +36,13 @@ import com.google.common.collect.Sets;
 
 
 /**
- * A set of column (a column is a map from taxon to sequence position) together with
- * a linearization of the columns
+ * A modifiable multiple sequence alignment (MSA).
+ * 
+ * Uses the algorithm described in 
+ * http://bioinformatics.oxfordjournals.org/content/23/2/e24.full
+ * to efficiently check that proposed additions
+ * of links still yield a valide MSA
+ * 
  * @author bouchard
  *
  */
@@ -121,19 +128,6 @@ public class MSAPoset implements Serializable
     for (Edge e : edgeCounter)
       result.tryAdding(e);
     return result;
-  }
-  
-  public static class ROCPoint
-  {
-    public final double precision, recall, posterior;
-
-    public ROCPoint(double precision, double recall, double posterior)
-    {
-      this.precision = precision;
-      this.recall = recall;
-      this.posterior = posterior;
-    }
-    
   }
   
   public static List<ROCPoint> ROC(

@@ -1,6 +1,8 @@
-package muset;
+package muset.util;
 import java.io.*;
 import java.util.*;
+
+import muset.MSAPoset;
 
 import org.apache.commons.lang3.tuple.Pair;
 

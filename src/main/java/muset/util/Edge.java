@@ -1,9 +1,11 @@
-package muset;
+package muset.util;
 
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import muset.SequenceId;
 
 import org.apache.commons.lang3.tuple.Pair;
 
