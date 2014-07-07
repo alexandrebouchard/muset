@@ -56,6 +56,11 @@ public class MSAPoset implements Serializable
   private final List<SequenceId> allSequenceIds;
   private boolean linearizationEnabled = true;
   
+  /**
+   * Create a new empty alignment over the given sequences.
+   * 
+   * @param sequences
+   */
   public MSAPoset(Map<SequenceId,String> sequences)
   {
     this.allSequenceIds = Lists.newArrayList(sequences.keySet());
@@ -110,8 +115,17 @@ public class MSAPoset implements Serializable
     this.linearizationEnabled = true;
   }
   
-  public final List<SequenceId> taxa() { return Collections.unmodifiableList(allSequenceIds); }
+  /**
+   * 
+   * @return All the sequence ids contained in this MSA
+   */
+  public final List<SequenceId> allSequenceIds() { return Collections.unmodifiableList(allSequenceIds); }
   
+  /**
+   * Performs a deep copy.
+   * 
+   * @param base
+   */
   public MSAPoset(MSAPoset base)
   {
     this(base.sequences);
@@ -120,6 +134,18 @@ public class MSAPoset implements Serializable
         throw new RuntimeException();
   }
   
+  /**
+   * Create an alignment by greedily adding, if possible, the links (edges) provided 
+   * by the counter, in order of highest to lowest score. The efficient poset representation
+   * is used to ensure that this yields a valid alignment (if adding one would break the
+   * MSA properties, then it is just skipped).
+   * 
+   * This is called max recall as no attention is spent on precision under this strategy.
+   * 
+   * @param sequences
+   * @param edgeCounter
+   * @return
+   */
   public static MSAPoset maxRecallMSA(Map<SequenceId,String> sequences, Counter<Edge> edgeCounter)
   {
     MSAPoset result = new MSAPoset(sequences);
@@ -128,6 +154,18 @@ public class MSAPoset implements Serializable
     return result;
   }
   
+  /**
+   * Creates a full ROC path of alignment quality scores by adding 
+   * alignment links (edges) in order of score (provided by the counter).
+   * 
+   * @see maxRecallMSA, this is essentially a more instrumented version.
+   * 
+   * @param sequences
+   * @param edgeCounter
+   * @param ref
+   * @param nPoints
+   * @return
+   */
   public static List<ROCPoint> ROC(
       Map<SequenceId,String> sequences, 
       Counter<Edge> edgeCounter, 
@@ -157,8 +195,19 @@ public class MSAPoset implements Serializable
     return result;
   }
   
-  public int nTaxa() { return sequences.size(); }
+  /**
+   * The number of sequences in the MSA (e.g. for pairwise, this is 2).
+   * @return
+   */
+  public int nSequences() { return sequences.size(); }
   
+  /**
+   * The total number of edges, obtained by multiplying the number of MSA
+   * columns by the binomial coefficient of the number of non-gap symbol of
+   * each column. 
+   * 
+   * @return
+   */
   public int nEdges()
   {
     int result = 0;
@@ -167,6 +216,13 @@ public class MSAPoset implements Serializable
     return result;
   }
   
+  /**
+   * The list of all edges. 
+   * 
+   * @see nEdges()
+   * 
+   * @return
+   */
   public Collection<Edge> edges()
   {
     List<Edge> result = Lists.newArrayList();
@@ -185,38 +241,35 @@ public class MSAPoset implements Serializable
     return result;
   }
 
+  /**
+   * The original sequences (without gap symbols).
+   * 
+   * @return
+   */
   public Map<SequenceId,String> sequences() 
   {
     return Collections.unmodifiableMap(sequences);
   }
   
+  /**
+   * Access a character in a column.
+   * 
+   * @param c
+   * @param sequenceId
+   * @return
+   */
   public char charAt(Column c, SequenceId sequenceId)
   {
     return sequences.get(sequenceId).charAt(c.points.get(sequenceId));
   }
-  
-  public char charAt(Edge e, boolean first)
-  {
-    return sequences.get(first ? e.sequenceId1() : e.sequenceId2())
-      .charAt(first ? e.index1() : e.index2());
-  }
  
-  
-  public static boolean isValidSplit(Column c, Set<SequenceId> keepInCurrent)
+  private static boolean isValidSplit(Column c, Set<SequenceId> keepInCurrent)
   {
     if (keepInCurrent.size() == 0 || keepInCurrent.size() == c.points.size())
       return false; // there must be at least one point in each cc
     if (!c.points.keySet().containsAll(keepInCurrent))
       return false; // malformed request!
     return true;
-  }
-  
-  public void setString(SequenceId t, String s)
-  {
-    String cur = sequences.get(t);
-    if (cur.length() != s.length())
-      throw new RuntimeException();
-    sequences.put(t, s);
   }
   
   private Double findNextLocation(Column c)
@@ -256,6 +309,15 @@ public class MSAPoset implements Serializable
     this.linearizedLocations = newLinearizedLocations;
   }
   
+  /**
+   * Break (split) a column into two columns.
+   * 
+   * Modifies this object in place.
+   * 
+   * @param c The current column to be split
+   * @param keepInCurrent Specifies one of the two new columns (the other 
+   *  is the complement relative to the current column).
+   */
   public void split(Column c, Set<SequenceId> keepInCurrent)
   {
     Double insertLoc = null;
@@ -291,15 +353,31 @@ public class MSAPoset implements Serializable
     
   }
   
+  /**
+   * 
+   * @param e
+   * @return
+   */
   public boolean containsEdge(Edge e)
   {
     return getColumn(e,true) == getColumn(e,false);
   }
   
-  public static MSAPoset restrict(MSAPoset msa, Set<SequenceId> taxa)
+  /**
+   * Restrict (project) this alignment to the given subset.
+   * Discards all alignment links where both end points are not
+   * in the restriction.
+   * 
+   * Modifies this object in place.
+   * 
+   * @param msa
+   * @param sequenceIdsRestriction
+   * @return
+   */
+  public static MSAPoset restrict(MSAPoset msa, Set<SequenceId> sequenceIdsRestriction)
   {
     Map<SequenceId,String> sequences = new HashMap<SequenceId, String>();
-    Set<SequenceId> inter = Sets.intersection(taxa, msa.sequences().keySet());
+    Set<SequenceId> inter = Sets.intersection(sequenceIdsRestriction, msa.sequences().keySet());
     for (SequenceId t : inter)
       sequences.put(t, msa.sequences().get(t));
     MSAPoset result = new MSAPoset(sequences);
@@ -315,6 +393,13 @@ public class MSAPoset implements Serializable
     return result;
   }
   
+  /**
+   * Creates a new alignment where the sequences and edges are given by the union
+   * of the provided MSAs.
+   * 
+   * @param collection
+   * @return
+   */
   public static MSAPoset union(Collection<MSAPoset> collection)
   {
     Map<SequenceId,String> sequences = new HashMap<SequenceId, String>();
@@ -336,11 +421,11 @@ public class MSAPoset implements Serializable
   }
   
   /**
-   *  try to add all the links in this column
+   *  Attempts to add all the links in the input column.
    *  Returns if this was succesful
    *  
    *  Warning: if it fails, the set of columns will be the same as before calling,
-   *  but the linearization might be different (but still guaranteed to be consistent)
+   *  but the linearization might be different (but still guaranteed to be consistent).
    */
   public boolean tryAdding(Column c)
   {
@@ -491,29 +576,27 @@ public class MSAPoset implements Serializable
     else   return columnMaps.get(alignmentLink.sequenceId2())[alignmentLink.index2()];
   }
   
+  /**
+   * 
+   * @param sequenceId
+   * @param index
+   * @return The column in which the given character index in the given sequenceId belongs to
+   */
   public Column column(SequenceId sequenceId, int index)
   {
     return columnMaps.get(sequenceId)[index];
   }
   
-  public Set<Map<SequenceId,Integer>> points()
+  private Set<Map<SequenceId,Integer>> points()
   {
     Set<Map<SequenceId,Integer>> result = Sets.newLinkedHashSet();
     for (Column c : linearizedColumns.keySet())
       result.add(c.points);
     return result;
   }
+
   
-  public Set<Column> relevantColumns(Set<SequenceId> sequenceIds)
-  {
-    Set<Column> result = Sets.newLinkedHashSet();
-    for (Column c : linearizedColumns.keySet())
-      if (BriefCollections.intersects(c.points.keySet(), sequenceIds))
-        result.add(c);
-    return result;
-  }
-  
-  public static List<Edge> spanningEdges(Map<SequenceId,Integer> points)
+  private static List<Edge> spanningEdges(Map<SequenceId,Integer> points)
   {
     List<Edge> result = Lists.newArrayList();
     if (points.size() < 2)
@@ -528,12 +611,16 @@ public class MSAPoset implements Serializable
     }
     return result;
   }
-  
-  public boolean isFull(Column c)
-  {
-    return c.points.keySet().equals(sequences.keySet());
-  }
 
+  /**
+   * A column is an equivalence class of (sequenceId, position)'s.
+   * 
+   * The interpretation is that all members of this equivalence class are 
+   * hypothesized to have a common ancestor.
+   * 
+   * @author Alexandre Bouchard (alexandre.bouchard@gmail.com)
+   *
+   */
   public static class Column implements Serializable
   {
     private static final long serialVersionUID = 1L;
@@ -574,11 +661,20 @@ public class MSAPoset implements Serializable
     public String toString() { return points.toString(); }
   }
   
+  /**
+   * 
+   * @return A set of columns in no particular order.
+   */
   public Collection<Column> columns()
   {
     return Collections.unmodifiableCollection(linearizedColumns.keySet());
   }
   
+  /**
+   * A list of columns in a MSA-linearized order (i.e. topological order with
+   * respect to the order of all sequences
+   * @return
+   */
   public List<Column> linearizedColumns()
   {
     if (!linearizationEnabled)
@@ -596,7 +692,16 @@ public class MSAPoset implements Serializable
     return Arrays.asList(all);
   }
   
+  /**
+   * 
+   * @return The average over pairs of sequences and character of identical linked characters.
+   */
   public double getIdentityStatistic() { return basicStat(true); }
+  
+  /**
+   * 
+   * @return The average over pairs of sequences and character of linked characters
+   */
   public double getAlignedStatistics() { return basicStat(false);}
   
   public double getMeanSequenceLength() 
@@ -610,8 +715,8 @@ public class MSAPoset implements Serializable
   private double basicStat(boolean isIdentity)
   {
     SummaryStatistics stat = new SummaryStatistics();
-    for (SequenceId t1 : taxa())
-      for (SequenceId t2 : taxa())
+    for (SequenceId t1 : allSequenceIds())
+      for (SequenceId t2 : allSequenceIds())
         if (!t1.equals(t2))
           stat.addValue(basicStat(t1,t2,isIdentity));
     return stat.getMean();
@@ -696,7 +801,11 @@ public class MSAPoset implements Serializable
     return result;
   }
 
-  
+  /**
+   * @param gold
+   * @param guess
+   * @return
+   */
   public static double columnRecall(MSAPoset gold, MSAPoset guess)
   {
     Set<Map<SequenceId,Integer>> goldColumns = gold.points(),
@@ -712,6 +821,12 @@ public class MSAPoset implements Serializable
     return num/denom;
   }
   
+  /**
+   * 
+   * @param gold
+   * @param guess
+   * @return
+   */
   public static double edgeRecall(MSAPoset gold, MSAPoset guess)
   {
     double num = 0.0, denom = 0.0;
@@ -724,16 +839,34 @@ public class MSAPoset implements Serializable
     return num/denom;
   }
   
+  /**
+   * 
+   * @param gold
+   * @param guess
+   * @return
+   */
   public static double edgePrecision(MSAPoset gold, MSAPoset guess)
   {
     return edgeRecall(guess, gold);
   }
   
+  /**
+   * 
+   * @param gold
+   * @param guess
+   * @return
+   */
   public static double edgeF1(MSAPoset gold, MSAPoset guess)
   {
     return f1Score(edgePrecision(gold, guess), edgeRecall(gold, guess));
   }
   
+  /**
+   * 
+   * @param precision
+   * @param recall
+   * @return
+   */
   public static double f1Score(double precision, double recall)
   {
     if (precision + recall == 0.0) return 0.0;
@@ -757,7 +890,7 @@ public class MSAPoset implements Serializable
           processed.put(item, c.points.get(item));
         result.tryAdding(processed);
     }
-    for (SequenceId sequenceId : result.taxa())
+    for (SequenceId sequenceId : result.allSequenceIds())
       result.sequences.put(sequenceId, result.sequences.get(sequenceId).toUpperCase());
     result.enableLinearization();
     return result;
