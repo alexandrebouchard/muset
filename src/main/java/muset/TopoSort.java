@@ -246,22 +246,6 @@ public class TopoSort
     result.add(current);
   }
   
-  private static <T> void dfs2(PartialOrder<T> po, T _current, Set<T> remaining, List<T> result)
-  {
-    Deque<T> stack = new ArrayDeque<T>();
-    stack.push(_current);
-    while (!stack.isEmpty())
-    {
-      T current = stack.pop();
-      if (!remaining.contains(current))
-      {
-        remaining.remove(current);
-        result.add(current);
-      }
-    }
-    Collections.reverse(result);
-  }
-  
   public static final class HashOrder<T> implements PartialOrder<T>, Serializable
   {
     private static final long serialVersionUID = 1L;
