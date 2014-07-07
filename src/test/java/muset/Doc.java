@@ -28,14 +28,13 @@ public class Doc
    * 
    * The main features are:
    * 
-   * - MSAPoset, an efficient poset representation of MSAs, based on http://bioinformatics.oxfordjournals.org/content/23/2/e24.full
-   * - Efficient and flexible pairwise alignment (max, sum, and sampling), based on alignment random fields
-   *   [http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-153.pdf] (code is current
-   *   being transferred from a legacy SVN library)
-   * - Variational inference algorithms for MSAs 
+   * 1. MSAPoset, an efficient poset representation of MSAs, based on http://bioinformatics.oxfordjournals.org/content/23/2/e24.full
+   * 2. Efficient and flexible pairwise alignment (max, sum, and sampling), based on alignment random fields
+   *   [http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-153.pdf]. 
+   * 3. Variational inference algorithms for MSAs 
    *   [http://papers.nips.cc/paper/4036-variational-inference-over-combinatorial-spaces.pdf]
-   *   (code is current
-   *   being transferred from a legacy SVN library).
+   *  
+   * Note: as of Jul 7 2014, 1. is operational, while code for 2 and 3 is being transferred from a legacy SVN library.
    * 
    * Muset stands for MUltiple SEquence Toolkit.
    * 
@@ -67,6 +66,7 @@ public class Doc
    * 
    * - Check out the source ``git clone git@github.com:alexandrebouchard/muset.git``
    * - Compile using ``gradle installApp``
+   * - Add the jars in ``build/install/muset/lib/`` into your classpath
    */
   @Tutorial(startTutorial = "README.md", showSource = false)
   public void installInstructions()
