@@ -28,8 +28,7 @@ public class Doc
    * 
    * The main features are:
    * 
-   * - MSAPoset, an efficient poset representation of MSAs, based on 
-   *   [http://bioinformatics.oxfordjournals.org/content/23/2/e24.full]
+   * - MSAPoset, an efficient poset representation of MSAs, based on [http://bioinformatics.oxfordjournals.org/content/23/2/e24.full]
    * - Efficient and flexible pairwise alignment (max, sum, and sampling), based on alignment random fields
    *   [http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-153.pdf] (code is current
    *   being transferred from a legacy SVN library)
