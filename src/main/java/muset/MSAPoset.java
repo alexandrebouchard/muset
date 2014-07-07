@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import muset.util.Edge;
+import muset.util.ROCPoint;
 import muset.util.TopoSort;
 import muset.util.TopoSort.PartialOrder;
 
@@ -896,7 +897,13 @@ public class MSAPoset implements Serializable
     return result;
   }
 
-  
+  /**
+   * Save the alignment in fasta format.
+   * 
+   * Uses '-' for gaps.
+   * 
+   * @param f
+   */
   public void toFASTA(File f)
   {
     PrintWriter out = BriefIO.output(f); //IOUtils.openOutHard(f);
@@ -914,7 +921,12 @@ public class MSAPoset implements Serializable
     out.close();
   }
   
-
+  /**
+   * Parse an alignment in fasta format.
+   * 
+   * @param f
+   * @return
+   */
   public static MSAPoset parseFASTA(File f)
   {
     // gather data
@@ -929,14 +941,14 @@ public class MSAPoset implements Serializable
       {
         currentTaxon = new SequenceId( BriefStrings.firstGroupFromFirstMatch("[>](.*)",line));
         if (alignData.containsKey(currentTaxon))
-          throw new RuntimeException("Duplicated taxon name:" + currentTaxon);
+          throw new RuntimeException("Duplicated sequenceId:" + currentTaxon);
         alignData.put(currentTaxon, new ArrayList<Integer>());
         stringData.put(currentTaxon, new StringBuilder());
       }
       else if (line.matches("[a-zA-Z.-]*"))
       {
         if (currentTaxon == null)
-          throw new RuntimeException("Sequences should be preceded by the taxon name using a line " +
+          throw new RuntimeException("Sequences should be preceded by the sequenceId using a line " +
           		"of the form \">[name]\"");
         for (char c : line.toCharArray())
           if (c == '.' || c == '-')
@@ -981,12 +993,6 @@ public class MSAPoset implements Serializable
     }
     result.enableLinearization();
     return result;
-  }
-  
-
-  public PartialOrder<Column> getPoset()
-  {
-    return poset; // an implicit representation
   }
 
   public static boolean deepEquals(MSAPoset msa1, MSAPoset msa2)

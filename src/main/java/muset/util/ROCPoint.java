@@ -1,4 +1,4 @@
-package muset;
+package muset.util;
 
 
 
