@@ -47,6 +47,16 @@ dependencies {
 - Compile using ``gradle installApp``
 - Add the jars in ``build/install/muset/lib/`` into your classpath
 
+### Use in eclipse
+
+- Check out the source ``git clone git@github.com:alexandrebouchard/muset.git``
+- Type ``gradle eclipse`` from the root of the repository
+- From eclipse:
+  - ``Import`` in ``File`` menu
+  - ``Import existing projects into workspace``
+  - Select the root
+  - Deselect ``Copy projects into workspace`` to avoid having duplicates
+
 
 Using MSAPoset
 --------------
