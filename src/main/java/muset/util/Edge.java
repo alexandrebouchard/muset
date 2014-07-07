@@ -18,21 +18,21 @@ import briefj.collections.UnorderedPair;
 
 /**
  * An edge connects two alignment points
- * An alignment point is characterized by a language (species) and index in the sequence
+ * An alignment point is characterized by a sequenceId and an index in the sequence
  */
 public final class Edge  implements Serializable
 {
   private static final long serialVersionUID = 1L;
   public int index1()     { return data.getFirst ().getLeft (); }
   public int index2()     { return data.getSecond().getLeft (); }
-  public SequenceId lang1() { return data.getFirst ().getRight(); }
-  public SequenceId lang2() { return data.getSecond().getRight(); }
+  public SequenceId sequenceId1() { return data.getFirst ().getRight(); }
+  public SequenceId sequenceId2() { return data.getSecond().getRight(); }
   private final UnorderedPair<Pair<Integer,SequenceId>,Pair<Integer,SequenceId>> data;
-  public Edge(int index1, int index2, SequenceId lang1,
-      SequenceId lang2)
+  public Edge(int index1, int index2, SequenceId sequenceId1,
+      SequenceId sequenceId2)
   {
     data = new UnorderedPair<Pair<Integer,SequenceId>,Pair<Integer,SequenceId>>(
-        Pair.of(index1,lang1),Pair.of(index2,lang2));
+        Pair.of(index1,sequenceId1),Pair.of(index2,sequenceId2));
   }
   @Override public String toString() { return data.toString(); }
   public static Pattern p = Pattern.compile("\\(\\(([^,]*), ([^)]*)\\), \\(([^,]*), ([^)]*)\\)\\)");

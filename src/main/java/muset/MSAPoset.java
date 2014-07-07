@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -26,7 +25,6 @@ import org.apache.commons.math3.util.CombinatoricsUtils;
 
 import briefj.BriefCollections;
 import briefj.BriefIO;
-import briefj.BriefMaps;
 import briefj.BriefStrings;
 import briefj.collections.Counter;
 
@@ -41,7 +39,7 @@ import com.google.common.collect.Sets;
  * Uses the algorithm described in 
  * http://bioinformatics.oxfordjournals.org/content/23/2/e24.full
  * to efficiently check that proposed additions
- * of links still yield a valide MSA
+ * of links still yield a valid MSA.
  * 
  * @author bouchard
  *
@@ -55,26 +53,26 @@ public class MSAPoset implements Serializable
   private Map<Column,Double> linearizedColumns = Maps.newLinkedHashMap();
   private final Map<SequenceId,Column[]> columnMaps = Maps.newLinkedHashMap();
   private final Map<SequenceId,String> sequences;
-  private final List<SequenceId> taxa;
+  private final List<SequenceId> allSequenceIds;
   private boolean linearizationEnabled = true;
   
   public MSAPoset(Map<SequenceId,String> sequences)
   {
-    this.taxa = Lists.newArrayList(sequences.keySet());
-    Collections.sort(taxa);
+    this.allSequenceIds = Lists.newArrayList(sequences.keySet());
+    Collections.sort(allSequenceIds);
     this.sequences = sequences;
     this.poset = new ImplicitPoset(); 
     Counter<Column> fraction = new Counter<Column>();
     
-    for (SequenceId lang : taxa)
+    for (SequenceId sequenceId : allSequenceIds)
     {
-      Column[] currentMap = new Column[sequences.get(lang).length()];
-      columnMaps.put(lang, currentMap);
-      for (int i =0 ; i < sequences.get(lang).length(); i++)
+      Column[] currentMap = new Column[sequences.get(sequenceId).length()];
+      columnMaps.put(sequenceId, currentMap);
+      for (int i =0 ; i < sequences.get(sequenceId).length(); i++)
       {
-        Column currentCol = new Column(lang, i);
+        Column currentCol = new Column(sequenceId, i);
         currentMap[i] = (currentCol);
-        fraction.setCount(currentCol, -((double) i) / (1.0 + ((double) sequences.get(lang).length())));
+        fraction.setCount(currentCol, -((double) i) / (1.0 + ((double) sequences.get(sequenceId).length())));
       }
     }
     int curIdx = 0;
@@ -87,13 +85,13 @@ public class MSAPoset implements Serializable
     }
   }
   
-  public void disableLinearization()
+  private void disableLinearization()
   {
     this.linearizationEnabled = false;
     this.linearizedLocations = null;
   }
   
-  public void enableLinearization()
+  private void enableLinearization()
   {
     if (linearizationEnabled)
       return;
@@ -112,7 +110,7 @@ public class MSAPoset implements Serializable
     this.linearizationEnabled = true;
   }
   
-  public final List<SequenceId> taxa() { return Collections.unmodifiableList(taxa); }
+  public final List<SequenceId> taxa() { return Collections.unmodifiableList(allSequenceIds); }
   
   public MSAPoset(MSAPoset base)
   {
@@ -173,13 +171,13 @@ public class MSAPoset implements Serializable
   {
     List<Edge> result = Lists.newArrayList();
     for (Column c : linearizedColumns.keySet())
-      for (int l1i = 0; l1i < taxa.size(); l1i++)
+      for (int l1i = 0; l1i < allSequenceIds.size(); l1i++)
       {
-        final SequenceId l1 = taxa.get(l1i);
+        final SequenceId l1 = allSequenceIds.get(l1i);
         if (c.points.containsKey(l1))
-          for (int l2i = l1i+1; l2i < taxa.size(); l2i++)
+          for (int l2i = l1i+1; l2i < allSequenceIds.size(); l2i++)
           {
-            final SequenceId l2 = taxa.get(l2i);
+            final SequenceId l2 = allSequenceIds.get(l2i);
             if (!l1.equals(l2) && c.points.containsKey(l2))
               result.add(new Edge(c.points.get(l1), c.points.get(l2), l1, l2));
           }
@@ -192,14 +190,14 @@ public class MSAPoset implements Serializable
     return Collections.unmodifiableMap(sequences);
   }
   
-  public char charAt(Column c, SequenceId lang)
+  public char charAt(Column c, SequenceId sequenceId)
   {
-    return sequences.get(lang).charAt(c.points.get(lang));
+    return sequences.get(sequenceId).charAt(c.points.get(sequenceId));
   }
   
   public char charAt(Edge e, boolean first)
   {
-    return sequences.get(first ? e.lang1() : e.lang2())
+    return sequences.get(first ? e.sequenceId1() : e.sequenceId2())
       .charAt(first ? e.index1() : e.index2());
   }
  
@@ -207,7 +205,7 @@ public class MSAPoset implements Serializable
   public static boolean isValidSplit(Column c, Set<SequenceId> keepInCurrent)
   {
     if (keepInCurrent.size() == 0 || keepInCurrent.size() == c.points.size())
-      return false; // there must be at leas one point in each cc
+      return false; // there must be at least one point in each cc
     if (!c.points.keySet().containsAll(keepInCurrent))
       return false; // malformed request!
     return true;
@@ -219,21 +217,6 @@ public class MSAPoset implements Serializable
     if (cur.length() != s.length())
       throw new RuntimeException();
     sequences.put(t, s);
-  }
-  
-  public void fixMSAUsingRandomCharacters(Set<Character> allowed, Random rand)
-  {
-    List<Character> list = Lists.newArrayList(allowed);
-    for (SequenceId t : taxa())
-    {
-      StringBuilder replacement = new StringBuilder();
-      for (char c : sequences().get(t).toCharArray())
-        if (allowed.contains(c))
-          replacement.append(c);
-        else
-          replacement.append(list.get(rand.nextInt(list.size())));
-      setString(t, replacement.toString());
-    }
   }
   
   private Double findNextLocation(Column c)
@@ -433,7 +416,7 @@ public class MSAPoset implements Serializable
       throw new RuntimeException();
   }
   
-  public class ImplicitPoset implements PartialOrder<Column>, Serializable 
+  private class ImplicitPoset implements PartialOrder<Column>, Serializable 
   {
     private static final long serialVersionUID = 1L;
 
@@ -504,13 +487,13 @@ public class MSAPoset implements Serializable
 
   private Column getColumn(Edge alignmentLink, boolean b)
   {
-    if (b) return columnMaps.get(alignmentLink.lang1())[alignmentLink.index1()];
-    else   return columnMaps.get(alignmentLink.lang2())[alignmentLink.index2()];
+    if (b) return columnMaps.get(alignmentLink.sequenceId1())[alignmentLink.index1()];
+    else   return columnMaps.get(alignmentLink.sequenceId2())[alignmentLink.index2()];
   }
   
-  public Column column(SequenceId lang, int index)
+  public Column column(SequenceId sequenceId, int index)
   {
-    return columnMaps.get(lang)[index];
+    return columnMaps.get(sequenceId)[index];
   }
   
   public Set<Map<SequenceId,Integer>> points()
@@ -521,11 +504,11 @@ public class MSAPoset implements Serializable
     return result;
   }
   
-  public Set<Column> relevantColumns(Set<SequenceId> langs)
+  public Set<Column> relevantColumns(Set<SequenceId> sequenceIds)
   {
     Set<Column> result = Sets.newLinkedHashSet();
     for (Column c : linearizedColumns.keySet())
-      if (BriefCollections.intersects(c.points.keySet(), langs))
+      if (BriefCollections.intersects(c.points.keySet(), sequenceIds))
         result.add(c);
     return result;
   }
@@ -535,12 +518,12 @@ public class MSAPoset implements Serializable
     List<Edge> result = Lists.newArrayList();
     if (points.size() < 2)
       return result;
-    List<SequenceId> langs = Lists.newArrayList(points.keySet());
-    final SequenceId baseLang = langs.get(0);
+    List<SequenceId> sequenceIds = Lists.newArrayList(points.keySet());
+    final SequenceId baseLang = sequenceIds.get(0);
     final int basePos = points.get(baseLang);
-    for (int i = 1; i < langs.size(); i++)
+    for (int i = 1; i < sequenceIds.size(); i++)
     {
-      final SequenceId otherLang = langs.get(i);
+      final SequenceId otherLang = sequenceIds.get(i);
       result.add(new Edge(basePos, points.get(otherLang), baseLang, otherLang));
     }
     return result;
@@ -557,7 +540,7 @@ public class MSAPoset implements Serializable
     private Map<SequenceId,Integer> points;
     
     /**
-     * a map from language to a POSITION in the string
+     * a map from sequenceId to a POSITION in the string
      * NOT an indexed character!
      * @return
      */
@@ -570,10 +553,10 @@ public class MSAPoset implements Serializable
     {
       points = new HashMap<SequenceId, Integer>(2, 0.75f);
     }
-    public Column(SequenceId lang, int i)
+    public Column(SequenceId sequenceId, int i)
     {
       points = new HashMap<SequenceId, Integer>(2, 0.75f);
-      points.put(lang,i);
+      points.put(sequenceId,i);
     }
     
     public List<Edge> spanningEdges()
@@ -656,12 +639,12 @@ public class MSAPoset implements Serializable
   {
     StringBuilder [] builders = createPaddedStrings(restriction);
     StringBuilder result = new StringBuilder();
-    List<SequenceId> languagePrintOrder = printOrder(restriction);
-    for (int i = 0; i < languagePrintOrder.size(); i++)
+    List<SequenceId> sequenceIdPrintOrder = printOrder(restriction);
+    for (int i = 0; i < sequenceIdPrintOrder.size(); i++)
     {
       result.append(builders[i]);
       result.append("|");
-      result.append(languagePrintOrder.get(i));
+      result.append(sequenceIdPrintOrder.get(i));
       result.append("\n");
     }
     return result.toString();
@@ -681,12 +664,12 @@ public class MSAPoset implements Serializable
   private StringBuilder [] createPaddedStrings(Set<SequenceId> restriction)
   {
     List<SequenceId> printOrder = printOrder(restriction);
-    Map<SequenceId,Integer> languagePrintOrder = invert(printOrder);
+    Map<SequenceId,Integer> sequenceIdPrintOrder = invert(printOrder);
     StringBuilder [] builders = new StringBuilder[printOrder.size()];
     
-    for (SequenceId lang : languagePrintOrder.keySet())
+    for (SequenceId sequenceId : sequenceIdPrintOrder.keySet())
     {
-      final int row = languagePrintOrder.get(lang);
+      final int row = sequenceIdPrintOrder.get(sequenceId);
       StringBuilder current = new StringBuilder();
       builders[row] = current;
 
@@ -694,12 +677,12 @@ public class MSAPoset implements Serializable
     for (Column c : linearizedColumns())
       if (restriction == null || BriefCollections.intersects(restriction, c.points.keySet()))
       {
-        for (SequenceId lang : languagePrintOrder.keySet())
+        for (SequenceId sequenceId : sequenceIdPrintOrder.keySet())
         {
-          String currentChar = c.points.keySet().contains(lang)   ?
-              "" + sequences.get(lang).charAt(c.points.get(lang)) :
+          String currentChar = c.points.keySet().contains(sequenceId)   ?
+              "" + sequences.get(sequenceId).charAt(c.points.get(sequenceId)) :
               "-";
-          builders[languagePrintOrder.get(lang)].append(currentChar);
+          builders[sequenceIdPrintOrder.get(sequenceId)].append(currentChar);
         }
       }
     return builders;
@@ -712,13 +695,7 @@ public class MSAPoset implements Serializable
       result.put(list.get(i),i);
     return result;
   }
-  public static <K,V> Map<V,Set<K>> invert(Map<K,V> map)
-  {
-    Map<V,Set<K>> result = new HashMap<V,Set<K>>();
-    for (K key : map.keySet())
-      BriefMaps.getOrPutSet(result, map.get(key)).add(key);
-    return result;
-  }
+
   
   public static double columnRecall(MSAPoset gold, MSAPoset guess)
   {
@@ -780,8 +757,8 @@ public class MSAPoset implements Serializable
           processed.put(item, c.points.get(item));
         result.tryAdding(processed);
     }
-    for (SequenceId lang : result.taxa())
-      result.sequences.put(lang, result.sequences.get(lang).toUpperCase());
+    for (SequenceId sequenceId : result.taxa())
+      result.sequences.put(sequenceId, result.sequences.get(sequenceId).toUpperCase());
     result.enableLinearization();
     return result;
   }
@@ -790,7 +767,7 @@ public class MSAPoset implements Serializable
   public void toFASTA(File f)
   {
     PrintWriter out = BriefIO.output(f); //IOUtils.openOutHard(f);
-    for (SequenceId t : taxa)
+    for (SequenceId t : allSequenceIds)
     {
       final String curSeq = sequences.get(t);
       out.append(">" + t + "\n");
@@ -843,27 +820,27 @@ public class MSAPoset implements Serializable
         throw new RuntimeException("Invalid line:" + line);
     // construct the align
     Map<SequenceId,String> strings = Maps.newLinkedHashMap();
-    for (SequenceId lang :  stringData.keySet())
-      strings.put(lang, stringData.get(lang).toString());
+    for (SequenceId sequenceId :  stringData.keySet())
+      strings.put(sequenceId, stringData.get(sequenceId).toString());
     MSAPoset result = new MSAPoset(strings);
     result.disableLinearization();
     int len = -1;
-    for (SequenceId lang : alignData.keySet())
+    for (SequenceId sequenceId : alignData.keySet())
     {
       if (len == -1)
-        len = alignData.get(lang).size();
-      else if (len != alignData.get(lang).size())
+        len = alignData.get(sequenceId).size();
+      else if (len != alignData.get(sequenceId).size())
         throw new RuntimeException("Invalid alignment spec: " +
         		"all gap-padded seqns should have the len");
     }
     
-    List<SequenceId> langs = Lists.newArrayList(alignData.keySet());
+    List<SequenceId> sequenceIds = Lists.newArrayList(alignData.keySet());
     for (int p = 0; p < len; p++)
     {
       Map<SequenceId,Integer> points = Maps.newLinkedHashMap();
-      for (int l = 0; l < langs.size(); l++)
+      for (int l = 0; l < sequenceIds.size(); l++)
       {
-        SequenceId l1 = langs.get(l);
+        SequenceId l1 = sequenceIds.get(l);
         if (alignData.get(l1).get(p) != null)
           points.put(l1, alignData.get(l1).get(p));
       }
