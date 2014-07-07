@@ -5,9 +5,9 @@ apply plugin: 'eclipse'
 uploadArchives {
   repositories.mavenDeployer {
     repository(url: "file:///Users/bouchard/Documents/web/public_html/maven/")
-    pom.version = "1.0.0"
+    pom.version = "1.0.1"
     pom.artifactId = "muset"
-    pom.groupId = "com.muset"
+    pom.groupId = "ca.ubc.stat"
   }
 }
 
