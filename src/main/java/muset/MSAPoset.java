@@ -152,9 +152,15 @@ public class MSAPoset implements Serializable
    */
   public static MSAPoset maxRecallMSA(Map<SequenceId,Sequence> sequences, Counter<Edge> edgeCounter)
   {
+    return consensusAlignment(sequences, edgeCounter, 0.0);
+  }
+  
+  public static MSAPoset consensusAlignment(Map<SequenceId,Sequence> sequences, Counter<Edge> edgeCounter, double threshold)
+  {
     MSAPoset result = new MSAPoset(sequences);
     for (Edge e : edgeCounter)
-      result.tryAdding(e);
+      if (edgeCounter.getCount(e) > threshold)
+        result.tryAdding(e);
     return result;
   }
   
@@ -800,7 +806,7 @@ public class MSAPoset implements Serializable
    * @param f
    * @return
    */
-  public static MSAPoset parseFASTA(File f)
+  public static MSAPoset parseFASTA(Alphabet alphabet, File f)
   {
     // gather data
     Map<SequenceId,List<Integer>> alignData = Maps.newLinkedHashMap();
@@ -838,9 +844,10 @@ public class MSAPoset implements Serializable
         throw new RuntimeException("Invalid line:" + line);
     // construct the align
     Map<SequenceId,Sequence> strings = Maps.newLinkedHashMap();
-    Alphabet alphabet = new Alphabet();
+
     for (SequenceId sequenceId :  stringData.keySet())
       strings.put(sequenceId, Sequence.buildSimpleSequence(alphabet, stringData.get(sequenceId).toString()));
+    
     MSAPoset result = new MSAPoset(strings);
     result.disableLinearization();
     int len = -1;

@@ -6,7 +6,12 @@ import java.util.List;
 import muset.Alphabet.Letter;
 
 
-
+/**
+ * A list of Letter's
+ * 
+ * @author Alexandre Bouchard (alexandre.bouchard@gmail.com)
+ *
+ */
 public class Sequence
 {
   private final List<Letter> letters;
@@ -24,6 +29,11 @@ public class Sequence
     return letters.get(i);
   }
   
+  /**
+   * 
+   * @param letter
+   * @return A new Sequence containing all the letters in this plus an additional one at the end.
+   */
   public Sequence append(Letter letter)
   {
     List<Letter> result = new ArrayList<Letter>(letters);

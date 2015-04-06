@@ -5,7 +5,7 @@ import muset.Alphabet.Letter;
 import muset.Sequence;
 
 /**
- * Homogenous is a special case of Heterogenous
+ * Homogeneous is a special case of Heterogeneous
  * Note: for convenience, the costs are not in log space here,
  * they are converted in createPairHMM()
  * 

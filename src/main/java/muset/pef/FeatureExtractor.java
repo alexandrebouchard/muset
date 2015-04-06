@@ -80,10 +80,13 @@ public final class FeatureExtractor implements
     {
     
       // pairs
-      final String emission = prefix + (instance.getLabel().topSymbol < instance.getLabel().botSymbol ?
-          "(" +  instance.getLabel().topToChar() + "," + instance.getLabel().botToChar() + ")" :
-          "(" +  instance.getLabel().botToChar() + "," + instance.getLabel().topToChar() + ")" ) ;
-      result.incrementCount(emission, 1.0);
+      if (options.useLetterPairs)
+      {
+        final String emission = prefix + (instance.getLabel().topSymbol < instance.getLabel().botSymbol ?
+            "(" +  instance.getLabel().topToChar() + "," + instance.getLabel().botToChar() + ")" :
+            "(" +  instance.getLabel().botToChar() + "," + instance.getLabel().topToChar() + ")" ) ;
+        result.incrementCount(emission, 1.0);
+      }
       
       if (features != null && 
           instance.getLabel().topSymbol < features.length && 

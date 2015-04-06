@@ -171,7 +171,8 @@ public class Doc
     // input and output to and from FASTA format
     File tempFile = BriefFiles.createTempFile();
     align.toFASTA(tempFile);
-    MSAPoset readMSA = MSAPoset.parseFASTA(tempFile);
+    Alphabet alpha = new Alphabet();
+    MSAPoset readMSA = MSAPoset.parseFASTA(alpha, tempFile);
     assertTrue(MSAPoset.deepEquals(readMSA, align));
   }
 }

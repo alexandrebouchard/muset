@@ -4,12 +4,33 @@ package muset;
 import briefj.Indexer;
 
 
-
+/**
+ * Maintain a collection of letters. 
+ * 
+ * A letter is a generalization of character, which can
+ * have a string representation longer then a single character.
+ * 
+ * Example: single nucleotides ('A', 'C', 'G', 'T'), codons 
+ * ('AAA', 'AAC', ..), phonemes, etc.
+ * 
+ * @author Alexandre Bouchard (alexandre.bouchard@gmail.com)
+ *
+ */
 public class Alphabet
 {
+  /**
+   * Bijection between {0, 1, 2, ..} to the letters created by this
+   * instance
+   */
   public final Indexer<Letter> indexer = new Indexer<Letter>();
+  
   private int letterStringLength = 0;
   
+  /**
+   * 
+   * @return The maximum length of the string representations of the
+   *    letters created by this instance
+   */
   public int getMaxLetterStringLength() 
   { 
     return letterStringLength; 
@@ -17,6 +38,10 @@ public class Alphabet
   
   public Alphabet() {}
   
+  /**
+   * 
+   * @param alphabet A copy of the provided alphabet
+   */
   public Alphabet(Alphabet alphabet)
   {
     for (Letter letter : alphabet.indexer.objectsList())
@@ -29,6 +54,13 @@ public class Alphabet
     return indexer.containsObject(temp);
   }
 
+  /**
+   * Return the letter after making sure that the letter is in the alphabet,
+   * adding it if needed.
+   * 
+   * @param contents The string representation of the letter
+   * @return
+   */
   public Letter getLetter(String contents)
   {
     Letter result = new Letter(contents);
@@ -40,6 +72,12 @@ public class Alphabet
     return result;
   }
   
+  /**
+   * Return the letter or throw a RuntimeException if the letter is not
+   * already in the alphabet.
+   * @param contents
+   * @return
+   */
   public Letter getExistingLetter(String contents)
   {
     Letter result = new Letter(contents);
@@ -48,6 +86,11 @@ public class Alphabet
     return result;
   }
   
+  /**
+   * Return a fixed length representation of the letter, used for alignments.
+   * @param letter
+   * @return
+   */
   public String toPaddedString(Letter letter)
   {
     return toPaddedString(letter, letterStringLength);
@@ -61,6 +104,13 @@ public class Alphabet
     return result;
   }
   
+  /**
+   * A letter is a generalization of character, which can
+   * have a string representation longer then a single character.
+   * 
+   * @author Alexandre Bouchard (alexandre.bouchard@gmail.com)
+   *
+   */
   public static class Letter
   {
     private final String contents;

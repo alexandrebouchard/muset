@@ -12,7 +12,7 @@ import bayonet.math.NumericalUtils;
 
 
 /**
- * Implements Heterogenous pair HMMs, meaning that the index in the top and bottom
+ * Implements Heterogeneous pair HMMs, meaning that the index in the top and bottom
  * strings can be used to determine the cost of the current transition
  * 
  * A Mealey automata

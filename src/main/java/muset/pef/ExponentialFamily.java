@@ -25,8 +25,19 @@ import briefj.opt.Option;
 import briefj.run.Results;
 
 
-
-// TODO: handle easy init and logging of weights here 
+/**
+ * Pairwise pseudo-likelihood training of Multiple alignments.
+ * 
+ * Implements the learning method of Chapter 5 of
+ * http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-153.pdf
+ * 
+ * In order to make this suitable to unsupervised learning, we
+ * use normalized decision where the output is the pair of phoneme 
+ * (or epsilon) emitted at each step of the alignment process.
+ * 
+ * @author Alexandre Bouchard (alexandre.bouchard@gmail.com)
+ *
+ */
 public final class ExponentialFamily
 {
   private CachedParams cachedParams;

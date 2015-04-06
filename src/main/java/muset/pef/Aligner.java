@@ -33,7 +33,7 @@ import muset.util.Edge;
 
 
 
-public class AlignMain implements Runnable
+public class Aligner implements Runnable
 {
   @OptionSet(name = "data")
   public SequenceDataset dataset = new SequenceDataset();
@@ -45,11 +45,14 @@ public class AlignMain implements Runnable
   @SuppressWarnings("rawtypes")
   public MaxentOptions learningOptions = new MaxentOptions();
 
-  @OptionSet(name = "learn")
-  public ExponentialFamilyOptions learnOptions = new ExponentialFamilyOptions();
+  @OptionSet(name = "expfam")
+  public ExponentialFamilyOptions expFamOptions = new ExponentialFamilyOptions();
   
   @OptionSet(name = "features")
   public FeatureOptions fo = new FeatureOptions();
+  
+  @Option
+  public int rocGridSize = 1;
   
   private ExponentialFamily learnedModel;
   private File iterationSpecificOutput;
@@ -157,8 +160,6 @@ public class AlignMain implements Runnable
         return false;
       return true;
     }
-    
-    
   }
   
   private void doIteration(int iterationNumber)
@@ -196,12 +197,18 @@ public class AlignMain implements Runnable
     // update suff stats
     learnedModel.suffStats.incrementAll(suffStats);
     
-    // create consensus align
-    MSAPoset maxRecallMSA = MSAPoset.maxRecallMSA(datum, edgePosteriors);
     
-    File folder = new File(iterationSpecificOutput, "alignments-txt");
-    folder.mkdir();
-    BriefIO.write(new File(folder, "" + groupId + ".align.txt") , maxRecallMSA.toString());
+    File txtFolder = new File(iterationSpecificOutput, "alignments-txt");  txtFolder.mkdir();
+    File fastaFolder = new File(iterationSpecificOutput, "alignments-fasta");fastaFolder.mkdir();
+    
+    
+    for (int i = 0; i < rocGridSize; i++)
+    {
+      double threshold = 1.0 - Math.pow(2.0, -i);
+      MSAPoset align = MSAPoset.consensusAlignment(datum, edgePosteriors, threshold);
+      BriefIO.write(new File(txtFolder, "" + groupId + ".align(" + threshold + ").txt") , align.toString());
+      align.toFASTA(new File(fastaFolder, "" + groupId + ".align(" + threshold + ").fasta"));
+    }
   }
 
   private List<Map<SequenceId, Sequence>> pairs(Map<SequenceId, Sequence> datum)
@@ -223,7 +230,7 @@ public class AlignMain implements Runnable
   @Override
   public void run()
   {
-    learnedModel = ExponentialFamily.createExpfam(learningOptions , learnOptions, fo, dataset.taxaPairs(), dataset.alphabet);
+    learnedModel = ExponentialFamily.createExpfam(learningOptions , expFamOptions, fo, dataset.taxaPairs(), dataset.alphabet);
     
     for (int iter = 0; iter < nIterations; iter++)
       doIteration(iter);
@@ -231,7 +238,7 @@ public class AlignMain implements Runnable
   
   public static void main(String [] args)
   {
-    Mains.instrumentedRun(args, new AlignMain());
+    Mains.instrumentedRun(args, new Aligner());
   }
   
 }
