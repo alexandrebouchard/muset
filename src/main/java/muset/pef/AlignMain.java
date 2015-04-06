@@ -199,7 +199,9 @@ public class AlignMain implements Runnable
     // create consensus align
     MSAPoset maxRecallMSA = MSAPoset.maxRecallMSA(datum, edgePosteriors);
     
-    BriefIO.write(new File(iterationSpecificOutput, "" + groupId + ".align.txt") , maxRecallMSA.toString());
+    File folder = new File(iterationSpecificOutput, "alignments-txt");
+    folder.mkdir();
+    BriefIO.write(new File(folder, "" + groupId + ".align.txt") , maxRecallMSA.toString());
   }
 
   private List<Map<SequenceId, Sequence>> pairs(Map<SequenceId, Sequence> datum)
