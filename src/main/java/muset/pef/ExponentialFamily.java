@@ -126,7 +126,7 @@ public final class ExponentialFamily
       options.getInitCounter(),
       centerParams = options.getCenterCounter();
     
-    FeatureExtractor fe = new FeatureExtractor(taxaPairs, fo);
+    FeatureExtractor fe = new FeatureExtractor(alphabet, taxaPairs, fo);
     Model model = Model.stdBranchSpecificModel(alphabet, fe.getStrTaxonSuffStat());
     ThreeStatesBaseMeasure tsmb = new ThreeStatesBaseMeasure(model);
     

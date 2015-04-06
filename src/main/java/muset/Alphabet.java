@@ -40,6 +40,14 @@ public class Alphabet
     return result;
   }
   
+  public Letter getExistingLetter(String contents)
+  {
+    Letter result = new Letter(contents);
+    if (!indexer.containsObject(result))
+      throw new RuntimeException("Letter was assumed to exist but did not:" + contents);
+    return result;
+  }
+  
   public String toPaddedString(Letter letter)
   {
     return toPaddedString(letter, letterStringLength);
