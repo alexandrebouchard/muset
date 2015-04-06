@@ -96,7 +96,11 @@ public final class FeatureExtractor implements
         if (feat1 != null && feat2 != null) // check needed because of boundary symbols
         {
           if (feat1.size() != feat2.size())
+          {
             result.incrementCount("featDimChange(" + Math.abs(feat1.size() - feat2.size()) + ")", 1.0);
+            for (int d = 0; d < feat1.size(); d++) result.incrementCount("featChange(" + d + "/" + feat1.size() + ")", 1.0);
+            for (int d = 0; d < feat2.size(); d++) result.incrementCount("featChange(" + d + "/" + feat2.size() + ")", 1.0);
+          }
           else
           {
             final int size = feat1.size();
