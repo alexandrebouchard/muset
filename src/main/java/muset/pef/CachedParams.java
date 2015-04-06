@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.SortedSet;
 
 import bayonet.regression.MaxentClassifier;
+import muset.Sequence;
 import muset.SequenceId;
 import muset.hmm.HetPairHMMSpecification;
 
@@ -17,7 +18,7 @@ public final class CachedParams
   /**
    * Weights coming for example from a message passing algorithm (see MessageComputations for weights[][][] semantics---called r messages there)
    */
-  public HetPairHMMSpecification getReweightedHMM(final double [][][] logWeights, final String top, final String bot, final SequenceId topTaxon, final SequenceId botTaxon)
+  public HetPairHMMSpecification getReweightedHMM(final double [][][] logWeights, final Sequence top, final Sequence bot, final SequenceId topTaxon, final SequenceId botTaxon)
   {
     final StrTaxonSuffStat.StrTaxonSuffStatExtractor extractor = 
       model.stSuffStat.getExtractor(top, bot,topTaxon, botTaxon);
@@ -41,7 +42,7 @@ public final class CachedParams
     };
   }
   
-  public HetPairHMMSpecification getUnsupPairHMM(final String top, final String bot, final SequenceId topTaxon, final SequenceId botTaxon)
+  public HetPairHMMSpecification getUnsupPairHMM(final Sequence top, final Sequence bot, final SequenceId topTaxon, final SequenceId botTaxon)
   {
     final StrTaxonSuffStat.StrTaxonSuffStatExtractor extractor = 
       model.stSuffStat.getExtractor(top, bot,topTaxon, botTaxon);
@@ -65,7 +66,7 @@ public final class CachedParams
   public CachedParams(Model model)
   {
     this.model = model;
-    cachedLogPrs = new double[model.nStates][model.nStates][model.stSuffStat.valuesIndexer.size()][model.enc.size()+1][model.enc.size()+1];
+    cachedLogPrs = new double[model.nStates][model.nStates][model.stSuffStat.valuesIndexer.size()][model.enc.indexer.size()+1][model.enc.indexer.size()+1];
     deepFill(cachedLogPrs, Double.NEGATIVE_INFINITY);
   }
   

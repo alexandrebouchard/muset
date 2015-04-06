@@ -1,5 +1,7 @@
 package muset.pef;
 
+import muset.Alphabet.Letter;
+
 public final class  Output  implements Comparable<Output>
 {
   public final int state2, topSymbol, botSymbol;
@@ -71,12 +73,12 @@ public final class  Output  implements Comparable<Output>
     		"topSym=" + topToChar() + "," +
     		"botSym=" + botToChar() + "]";
   }
-  public char toChar(int symbolId)
+  public Letter toLetter(int symbolId)
   {
     if (symbolId != model.epsilon())
-      return model.enc.i2o(symbolId);
-    return '-';
+      return model.enc.indexer.i2o(symbolId);
+    return null;
   }
-  public char topToChar() { return toChar(topSymbol); }
-  public char botToChar() { return toChar(botSymbol);   }
+  public Letter topToChar() { return toLetter(topSymbol); }
+  public Letter botToChar() { return toLetter(botSymbol);   }
 }

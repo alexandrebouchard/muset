@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import muset.Alphabet;
 import muset.MSAPoset;
+import muset.Sequence;
 import muset.SequenceId;
 import muset.hmm.HetPairHMM;
 import muset.pef.FeatureExtractor.FeatureOptions;
@@ -17,7 +19,6 @@ import bayonet.regression.LabeledInstance;
 import bayonet.regression.MaxentClassifier;
 import bayonet.regression.MaxentClassifier.MaxentOptions;
 import briefj.BriefIO;
-import briefj.Indexer;
 import briefj.collections.Counter;
 import briefj.collections.UnorderedPair;
 import briefj.opt.Option;
@@ -119,14 +120,14 @@ public final class ExponentialFamily
       ExponentialFamilyOptions options, 
       FeatureOptions fo, 
       Set<UnorderedPair<SequenceId, SequenceId>> taxaPairs,
-      Indexer<Character> enc)
+      Alphabet alphabet)
   {
     Counter<Object> initParams = 
       options.getInitCounter(),
       centerParams = options.getCenterCounter();
     
     FeatureExtractor fe = new FeatureExtractor(taxaPairs, fo);
-    Model model = Model.stdBranchSpecificModel(enc, fe.getStrTaxonSuffStat());
+    Model model = Model.stdBranchSpecificModel(alphabet, fe.getStrTaxonSuffStat());
     ThreeStatesBaseMeasure tsmb = new ThreeStatesBaseMeasure(model);
     
     return new ExponentialFamily(initParams, centerParams, learningOptions, model, tsmb, fe);
@@ -203,21 +204,21 @@ public final class ExponentialFamily
       }
   }
   
-  public HetPairHMM getReweightedHMM(double [][][] logWeights, String top, String bot, SequenceId topL, SequenceId botL)
+  public HetPairHMM getReweightedHMM(double [][][] logWeights, Sequence top, Sequence bot, SequenceId topL, SequenceId botL)
   {
-    top = top + Model.BOUNDARY_SYMBOL; 
-    bot = bot + Model.BOUNDARY_SYMBOL; 
+    top = top.append(model.BOUNDARY_SYMBOL); 
+    bot = bot.append(model.BOUNDARY_SYMBOL); 
     return new HetPairHMM(top, bot, cachedParams.getReweightedHMM(logWeights, top, bot, topL, botL));
   }
   
-  public HetPairHMM getHMM(String top, String bot, SequenceId topL, SequenceId botL)
+  public HetPairHMM getHMM(Sequence top, Sequence bot, SequenceId topL, SequenceId botL)
   {
-    top = top + Model.BOUNDARY_SYMBOL; 
-    bot = bot + Model.BOUNDARY_SYMBOL; 
+    top = top.append(model.BOUNDARY_SYMBOL); 
+    bot = bot.append(model.BOUNDARY_SYMBOL); 
     return new HetPairHMM(top, bot, cachedParams.getUnsupPairHMM(top, bot, topL, botL));
   }
   
-  public Counter<Edge> allPairsPosterior(Map<SequenceId,String> sequences)
+  public Counter<Edge> allPairsPosterior(Map<SequenceId,Sequence> sequences)
   {
     Counter<Edge> edgePosteriors = new Counter<Edge>();
     List<SequenceId> langs = new ArrayList<SequenceId>(sequences.keySet());
@@ -227,7 +228,7 @@ public final class ExponentialFamily
       for (int j = i+1; j < langs.size(); j++)
       {
         final SequenceId l2 = langs.get(j);
-        final String 
+        final Sequence 
           s1 = sequences.get(l1),
           s2 = sequences.get(l2);
         HetPairHMM hmm = getHMM(s1, s2, l1, l2);
@@ -242,7 +243,7 @@ public final class ExponentialFamily
     return edgePosteriors;
   }
   
-  public MSAPoset maxRecallAlignFromAllPairs(Map<SequenceId,String> sequences)
+  public MSAPoset maxRecallAlignFromAllPairs(Map<SequenceId,Sequence> sequences)
   {
     return MSAPoset.maxRecallMSA(sequences, allPairsPosterior(sequences));
   }

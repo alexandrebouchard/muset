@@ -4,6 +4,8 @@ package muset.hmm;
 import java.io.Serializable;
 import java.util.Arrays;
 
+import muset.Sequence;
+
 
 
 
@@ -16,11 +18,11 @@ public final class Derivation implements Serializable
 {
   private static final long serialVersionUID = -8207543758229656446L;
   private final int [] ancestors;
-  private final String ancestorWord, currentWord;
+  private final Sequence ancestorWord, currentWord;
   public static final int INSERTED = -1;
 
-  public Derivation(final int[] ancestors, final String ancestorWord, 
-      final String currentWord)
+  public Derivation(final int[] ancestors, final Sequence ancestorWord, 
+      final Sequence currentWord)
   {
     this.ancestors = ancestors;
     this.ancestorWord = ancestorWord;
@@ -55,8 +57,8 @@ public final class Derivation implements Serializable
     return ancestorWord != null && currentWord != null && 
       ancestors.length == currentWord.length();
   }
-  public String getAncestorWord() { return ancestorWord; }
-  public String getCurrentWord() { return currentWord; }
+  public Sequence getAncestorWord() { return ancestorWord; }
+  public Sequence getCurrentWord() { return currentWord; }
 
   /**
    * returns the index of the ancestor character c_a of the provided character c_b,

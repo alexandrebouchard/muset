@@ -92,14 +92,15 @@ public class Doc
   public void msaPosetTest()
   {
     // creating an alignment
-    Map<SequenceId,String> sequences = Maps.newLinkedHashMap();
+    Map<SequenceId,Sequence> sequences = Maps.newLinkedHashMap();
+    Alphabet alphabet = new Alphabet();
     SequenceId 
       seq0 = new SequenceId("seq-0"),
       seq1 = new SequenceId("seq-1"),
       seq2 = new SequenceId("seq-2");
-    sequences.put(seq0, "ACA");
-    sequences.put(seq1, "CC");
-    sequences.put(seq2, "ACC");
+    sequences.put(seq0, Sequence.buildSimpleSequence(alphabet, "ACA"));
+    sequences.put(seq1,  Sequence.buildSimpleSequence(alphabet, "CC"));
+    sequences.put(seq2,  Sequence.buildSimpleSequence(alphabet, "ACC"));
     MSAPoset align = new MSAPoset(sequences);
     
     // add links

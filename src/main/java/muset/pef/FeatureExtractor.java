@@ -1,6 +1,7 @@
 package muset.pef;
 import java.util.Set;
 
+import muset.Sequence;
 import muset.SequenceId;
 import muset.pef.StrTaxonSuffStat.StrTaxonSuffStatExtractor;
 import bayonet.regression.LabeledInstance;
@@ -97,8 +98,8 @@ public final class FeatureExtractor implements
     } 
     @Override
     public StrTaxonSuffStatExtractor getExtractor(
-        String str1, 
-        String str2,
+        Sequence str1, 
+        Sequence str2,
         SequenceId taxon1, 
         SequenceId taxon2)
     {

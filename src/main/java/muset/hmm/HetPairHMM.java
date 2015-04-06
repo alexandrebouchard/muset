@@ -3,6 +3,8 @@ package muset.hmm;
 import java.util.List;
 import java.util.Random;
 
+import muset.Alphabet.Letter;
+import muset.Sequence;
 import bayonet.distributions.Multinomial;
 import bayonet.math.CoordinatePacker;
 import bayonet.math.NumericalUtils;
@@ -25,10 +27,10 @@ public final class HetPairHMM
   private double [][][] prefix, suffix, maxSuffix; // state -> x pos -> y pos
   public final HetPairHMMSpecification hmm;
   private final int nStates;
-  public final String str1, str2;
+  public final Sequence str1, str2;
   private boolean fwdInitialized = false, bwdInitialized = false, bwdMaxInitialized = false;
   
-  public HetPairHMM(String str1, String str2, HetPairHMMSpecification pairHMM)
+  public HetPairHMM(Sequence str1, Sequence str2, HetPairHMMSpecification pairHMM)
   {
     this.str1 = str1;
     this.str2 = str2;
@@ -47,37 +49,6 @@ public final class HetPairHMM
     return prefixLogSumProduct(state1, x, y) + hmm.logWeight(state1, state2, x, y, deltaX, deltaY) + 
            suffixLogSumProduct(state2, str1.length()-x-deltaX, str2.length()-y-deltaY);
   }
-  
-//  public String alignmentMatrixToString()
-//  {
-//    DescriptiveStatistics stats = new DescriptiveStatistics();
-//    for (int x = 0; x < str1.length(); x++)
-//      for (int y = 0; y < str2.length(); y++)
-//      {
-//        final double expd = Math.exp(logPosteriorAlignment(x,y));
-//        stats.addValue(expd);
-//      }
-//    final double small = stats.getPercentile(25),
-//                 med   = stats.getPercentile(50),
-//                 big   = stats.getPercentile(75);
-//    
-//    Table t = new Table();
-//    for (int x = 0; x < str1.length(); x++)
-//      for (int y = 0; y < str2.length(); y++)
-//      {
-//        final double expd = Math.exp(logPosteriorAlignment(x,y));
-//        if (expd > big)
-//          t.set(x,y,"#");
-//        else if (expd > med)
-//          t.set(x,y,"+");
-//        else if (expd > small)
-//          t.set(x,y,"-");
-//        else
-//          t.set(x,y," ");
-//      }
-//    t.setBorder(false);
-//    return t.toString();
-//  }
   
   /**
    * The log posterior pr that these two points are aligned
@@ -226,13 +197,13 @@ public final class HetPairHMM
     bwdMaxInitialized = true;
   }
   
-  public static Derivation removeBoundary(Derivation d, char bound)
+  public static Derivation removeBoundary(Derivation d, Letter bound)
   {
     final int 
       oldLastBotIndex = d.getCurrentWord().length() - 1,
       oldLastTopIndex = d.getAncestorWord().length() - 1;
-    if (d.getCurrentWord().charAt(oldLastBotIndex) != bound ||
-        d.getAncestorWord().charAt(oldLastTopIndex) != bound ||
+    if (!d.getCurrentWord().letterAt(oldLastBotIndex).equals(bound) ||
+        !d.getAncestorWord().letterAt(oldLastTopIndex).equals(bound) ||
         d.ancestor(oldLastBotIndex) != oldLastTopIndex)
       throw new RuntimeException();
     int [] newAnc = new int[oldLastBotIndex];
@@ -242,8 +213,8 @@ public final class HetPairHMM
       else
         newAnc[i] = Derivation.INSERTED;
     return new Derivation(newAnc, 
-        d.getAncestorWord().substring(0, oldLastTopIndex),
-        d.getCurrentWord(). substring(0, oldLastBotIndex));
+        d.getAncestorWord().subsequence(0, oldLastTopIndex),
+        d.getCurrentWord(). subsequence(0, oldLastBotIndex));
   }
   
   public Derivation viterbi(List<Integer> stateSequence)
@@ -357,93 +328,5 @@ public final class HetPairHMM
     sizes[2] = nStates;
     return new CoordinatePacker(sizes);
   }
-//
-//  
-//  public static void main(String [] args)
-//  {
-//    ExponentialFamilyOptions expFamOptions = new ExponentialFamilyOptions();
-//    expFamOptions.encodingType = SequenceType.BINARY;
-//    FeatureOptions featureOptions = new FeatureOptions();
-//    
-//    expFamOptions.initParams = ExponentialFamilyOptions.INTERNAL;
-////    expFamOptions.internal.setCount("q=0,h=1,state1=1&state2=0", 2.0);
-//    expFamOptions.internal.setCount("q=0,h=1,state1=1&state2=1", -40.0);
-//    
-//    ExponentialFamily expFam = ExponentialFamily.createExpfam(new MaxentOptions(), expFamOptions, featureOptions, null);
-//    
-//    System.out.println(expFam);
-//    
-//    String top = "a";
-//    String bot = "a";
-//    
-//    HetPairHMM hmm = expFam.getHMM(top, bot, null, null);
-//    
-//    System.out.println("----");
-//    
-////    hmm.computeForward();
-////    System.out.println("----");
-////    hmm.computeBackward();
-////    System.out.println("----");
-////     
-//    System.out.println("===");
-//    hmm.viterbi(null);
-//    System.out.println("===");
-//    System.out.println(hmm.logSumProduct());
-//    
-//    
-////    Encodings enc = Encodings.toyCtxFreeEncodings(1);
-////    char bound = enc.boundChar();
-////   
-////    String top = bound + "aa" + bound;
-////    String bot = bound + "a" + bound;
-////    int startState = 0;
-////    int endState = 0;
-////    HomogenousHMM hmm = new HomogenousHMM(enc, 3, startState, endState);
-////    for (char t : enc.allChars())
-////      for (char b : enc.allChars())
-////      {
-////        hmm.setSub(0,0,t,b,1.0);
-////        hmm.setSub(1,0,t,b,1.0);
-////        hmm.setSub(2,0,t,b,1.0);
-////      }
-////    for (char t : enc.allChars())
-////      if (t != bound)
-////      {
-////        hmm.setDel(1,2,t,1.0);
-////        hmm.setDel(2,2,t,1.0);
-////        hmm.setDel(0,2,t,1.0);
-////      }
-////    for (char b : enc.allChars())
-////      if (b != bound)
-////      {
-////        hmm.setIns(0,1,b,1.0);
-////        hmm.setIns(1,1,b,1.0);
-////      }
-////    
-////    HetPairHMM hphmm = hmm.createPairHMM(top,bot);
-////    System.out.println(Math.exp(hphmm.logSumProduct()));
-////    System.out.println(Math.exp(hphmm.suffixLogSumProduct(hmm.startState, top.length(), bot.length())));
-////    Language one = new Language("one"),
-////    two = new Language("two");
-////    Model m = Model.stdBranchSpecificModel(enc, new HashSet(Arrays.asList(new UnorderedPair(one,two))));
-////    ExponentialFamily expFam = new ExponentialFamily(null, null, null, m, null,null);
-////    expFam.addSufficientStatistics(hphmm, one, two);
-////    for (LabeledInstance<Input,Output> key : expFam.suffStats.keySet())
-////      if (expFam.suffStats.getCount(key)!= 0) 
-////        System.out.println("" + key + "\t" + expFam.suffStats.getCount(key));
-//  }
-//  
-//  @Override
-//  public String toString()
-//  {
-//    Table table = new Table(new Table.Populator() {
-//      @Override public void populate()
-//      {
-//        for (int i = 0; i < str1.length(); i++)
-//          for (int j = 0; j < str2.length(); j++)
-//            set(i,j,Math.exp(logPosteriorAlignment(i,j)));
-//      }
-//    });
-//    return table.toString();
-//  }
+
 }

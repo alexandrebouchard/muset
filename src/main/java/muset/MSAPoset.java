@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import muset.Alphabet.Letter;
 import muset.util.Edge;
 import muset.util.ROCPoint;
 import muset.util.SupportFunctions;
@@ -30,6 +31,7 @@ import briefj.BriefIO;
 import briefj.BriefStrings;
 import briefj.collections.Counter;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -54,7 +56,7 @@ public class MSAPoset implements Serializable
   private TreeSet<Double> linearizedLocations = new TreeSet<Double>();
   Map<Column,Double> linearizedColumns = Maps.newLinkedHashMap();
   private final Map<SequenceId,Column[]> columnMaps = Maps.newLinkedHashMap();
-  final Map<SequenceId,String> sequences;
+  final Map<SequenceId,Sequence> sequences;
   private final List<SequenceId> allSequenceIds;
   private boolean linearizationEnabled = true;
   
@@ -63,7 +65,7 @@ public class MSAPoset implements Serializable
    * 
    * @param sequences
    */
-  public MSAPoset(Map<SequenceId,String> sequences)
+  public MSAPoset(Map<SequenceId,Sequence> sequences)
   {
     this.allSequenceIds = Lists.newArrayList(sequences.keySet());
     Collections.sort(allSequenceIds);
@@ -148,7 +150,7 @@ public class MSAPoset implements Serializable
    * @param edgeCounter
    * @return
    */
-  public static MSAPoset maxRecallMSA(Map<SequenceId,String> sequences, Counter<Edge> edgeCounter)
+  public static MSAPoset maxRecallMSA(Map<SequenceId,Sequence> sequences, Counter<Edge> edgeCounter)
   {
     MSAPoset result = new MSAPoset(sequences);
     for (Edge e : edgeCounter)
@@ -169,7 +171,7 @@ public class MSAPoset implements Serializable
    * @return
    */
   public static List<ROCPoint> ROC(
-      Map<SequenceId,String> sequences, 
+      Map<SequenceId,Sequence> sequences, 
       Counter<Edge> edgeCounter, 
       MSAPoset ref,
       int nPoints)
@@ -251,7 +253,7 @@ public class MSAPoset implements Serializable
    * 
    * @return
    */
-  public Map<SequenceId,String> sequences() 
+  public Map<SequenceId,Sequence> sequences() 
   {
     return Collections.unmodifiableMap(sequences);
   }
@@ -263,9 +265,9 @@ public class MSAPoset implements Serializable
    * @param sequenceId
    * @return
    */
-  public char charAt(Column c, SequenceId sequenceId)
+  public Letter charAt(Column c, SequenceId sequenceId)
   {
-    return sequences.get(sequenceId).charAt(c.points.get(sequenceId));
+    return sequences.get(sequenceId).letterAt(c.points.get(sequenceId));
   }
  
   private static boolean isValidSplit(Column c, Set<SequenceId> keepInCurrent)
@@ -381,7 +383,7 @@ public class MSAPoset implements Serializable
    */
   public static MSAPoset restrict(MSAPoset msa, Set<SequenceId> sequenceIdsRestriction)
   {
-    Map<SequenceId,String> sequences = new HashMap<SequenceId, String>();
+    Map<SequenceId,Sequence> sequences = new HashMap<SequenceId, Sequence>();
     Set<SequenceId> inter = Sets.intersection(sequenceIdsRestriction, msa.sequences().keySet());
     for (SequenceId t : inter)
       sequences.put(t, msa.sequences().get(t));
@@ -407,11 +409,11 @@ public class MSAPoset implements Serializable
    */
   public static MSAPoset union(Collection<MSAPoset> collection)
   {
-    Map<SequenceId,String> sequences = new HashMap<SequenceId, String>();
+    Map<SequenceId,Sequence> sequences = new HashMap<SequenceId, Sequence>();
     for (MSAPoset msa : collection)
       for (SequenceId key : msa.sequences().keySet())
       {
-        String current = sequences.get(key);
+        Sequence current = sequences.get(key);
         if (current == null)
           sequences.put(key, msa.sequences().get(key));
         else if (!current.equals(msa.sequences().get(key)))
@@ -710,7 +712,7 @@ public class MSAPoset implements Serializable
       else if (!isIdentity)
         stat.addValue(1.0);
       else
-        stat.addValue( charAt(c, t1) == charAt(c, t2) ? 1.0 : 0.0);
+        stat.addValue( charAt(c, t1).equals(charAt(c, t2)) ? 1.0 : 0.0);
     }
     return stat.getMean();
   }
@@ -749,21 +751,23 @@ public class MSAPoset implements Serializable
     Map<SequenceId,Integer> sequenceIdPrintOrder = SupportFunctions.invert(printOrder);
     StringBuilder [] builders = new StringBuilder[printOrder.size()];
     
+    int padLength = -1;
     for (SequenceId sequenceId : sequenceIdPrintOrder.keySet())
     {
+      padLength = Math.max(padLength, sequences.get(sequenceId).alphabet.getMaxLetterStringLength());
       final int row = sequenceIdPrintOrder.get(sequenceId);
       StringBuilder current = new StringBuilder();
       builders[row] = current;
-
     }
+    final String gap = Strings.repeat("-", padLength);
     for (Column c : linearizedColumns())
       if (restriction == null || BriefCollections.intersects(restriction, c.points.keySet()))
       {
         for (SequenceId sequenceId : sequenceIdPrintOrder.keySet())
         {
           String currentChar = c.points.keySet().contains(sequenceId)   ?
-              "" + sequences.get(sequenceId).charAt(c.points.get(sequenceId)) :
-              "-";
+              "" + Alphabet.toPaddedString(sequences.get(sequenceId).letterAt(c.points.get(sequenceId)), padLength) :
+              gap;
           builders[sequenceIdPrintOrder.get(sequenceId)].append(currentChar);
         }
       }
@@ -779,17 +783,13 @@ public class MSAPoset implements Serializable
    */
   public void toFASTA(File f)
   {
-    PrintWriter out = BriefIO.output(f); //IOUtils.openOutHard(f);
-    for (SequenceId t : allSequenceIds)
+    PrintWriter out = BriefIO.output(f); 
+    StringBuilder [] builders = createPaddedStrings(null);
+    List<SequenceId> sequenceIdPrintOrder = printOrder(null);
+    for (int i = 0; i < sequenceIdPrintOrder.size(); i++)
     {
-      final String curSeq = sequences.get(t);
-      out.append(">" + t + "\n");
-      for (Column c : linearizedColumns())
-        if (c.points.containsKey(t))
-          out.append("" + curSeq.charAt(c.points.get(t)));
-        else
-          out.append("-");
-      out.append("\n");
+      out.println(">" + sequenceIdPrintOrder.get(i));
+      out.println(builders[i]);
     }
     out.close();
   }
@@ -837,9 +837,10 @@ public class MSAPoset implements Serializable
       else
         throw new RuntimeException("Invalid line:" + line);
     // construct the align
-    Map<SequenceId,String> strings = Maps.newLinkedHashMap();
+    Map<SequenceId,Sequence> strings = Maps.newLinkedHashMap();
+    Alphabet alphabet = new Alphabet();
     for (SequenceId sequenceId :  stringData.keySet())
-      strings.put(sequenceId, stringData.get(sequenceId).toString());
+      strings.put(sequenceId, Sequence.buildSimpleSequence(alphabet, stringData.get(sequenceId).toString()));
     MSAPoset result = new MSAPoset(strings);
     result.disableLinearization();
     int len = -1;

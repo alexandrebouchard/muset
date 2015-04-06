@@ -1,12 +1,13 @@
 package muset.pef;
 import briefj.Indexer;
+import muset.Sequence;
 import muset.SequenceId;
 
 public abstract class StrTaxonSuffStat
 {
   public abstract StrTaxonSuffStatExtractor getExtractor(
-      String str1, 
-      String str2, 
+      Sequence str1, 
+      Sequence str2, 
       SequenceId taxon1, 
       SequenceId taxon2);
   

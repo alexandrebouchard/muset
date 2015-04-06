@@ -1,6 +1,8 @@
 package muset.hmm;
 
-import briefj.Indexer;
+import muset.Alphabet;
+import muset.Alphabet.Letter;
+import muset.Sequence;
 
 /**
  * Homogenous is a special case of Heterogenous
@@ -12,35 +14,35 @@ import briefj.Indexer;
  */
 public final class HomogenousHMM
 {
-  private final Indexer<Character> enc;
+  private final Alphabet alphabet;
   private final double [][][][] sub;   // prev state -> cur state -> top char -> bot char
   private final double [][][]   del;   // prev state -> cur state -> top char
   private final double [][][]   ins;   // prev state -> cur state -> bot char
   private final int startState, endState;
-  private int c2i(char c) { return enc.o2i(c); }
-  public HomogenousHMM(Indexer<Character> enc, int nStates, int startState, int endState)
+  private int c2i(Letter c) { return alphabet.indexer.o2i(c); }
+  public HomogenousHMM(Alphabet alphabet, int nStates, int startState, int endState)
   {
-    this.enc = enc;
+    this.alphabet = alphabet;
     this.startState = startState;
     this.endState = endState;
-    this.sub = new double[nStates][nStates][enc.size()][enc.size()];
-    this.del = new double[nStates][nStates][enc.size()];
-    this.ins = new double[nStates][nStates][enc.size()];
+    this.sub = new double[nStates][nStates][alphabet.indexer.size()][alphabet.indexer.size()];
+    this.del = new double[nStates][nStates][alphabet.indexer.size()];
+    this.ins = new double[nStates][nStates][alphabet.indexer.size()];
   }
   public int nStates() { return sub.length; }
-  public void setSub(int s1, int s2, char top, char bot, double value)
+  public void setSub(int s1, int s2, Letter top, Letter bot, double value)
   {
     this.sub[s1][s2][c2i(top)][c2i(bot)] = value;
   }
-  public void setIns(int s1, int s2, char bot, double value)
+  public void setIns(int s1, int s2, Letter bot, double value)
   {
     this.ins[s1][s2][c2i(bot)] = value;
   }
-  public void setDel(int s1, int s2, char top, double value)
+  public void setDel(int s1, int s2, Letter top, double value)
   {
     this.del[s1][s2][c2i(top)] = value;
   }
-  public HetPairHMM createPairHMM(String top, String bot)
+  public HetPairHMM createPairHMM(Sequence top, Sequence bot)
   {
     final double [][][][] logsub = new double[nStates()][nStates()][top.length()][bot.length()];   // prev state -> cur state -> top idx -> bot idx
     final double [][][]   logdel = new double[nStates()][nStates()][top.length()];   // prev state -> cur state -> top idx
@@ -50,11 +52,11 @@ public final class HomogenousHMM
       {
         for (int t = 0; t < top.length(); t++)
           for (int b = 0; b < bot.length(); b++)
-            logsub[s1][s2][t][b] = Math.log(sub[s1][s2][c2i(top.charAt(t))][c2i(bot.charAt(b))]);
+            logsub[s1][s2][t][b] = Math.log(sub[s1][s2][c2i(top.letterAt(t))][c2i(bot.letterAt(b))]);
         for (int t = 0; t < top.length(); t++)
-          logdel[s1][s2][t] = Math.log(del[s1][s2][c2i(top.charAt(t))]);
+          logdel[s1][s2][t] = Math.log(del[s1][s2][c2i(top.letterAt(t))]);
         for (int b = 0; b < bot.length(); b++)
-          logins[s1][s2][b] = Math.log(ins[s1][s2][c2i(bot.charAt(b))]);
+          logins[s1][s2][b] = Math.log(ins[s1][s2][c2i(bot.letterAt(b))]);
       }
     final HetPairHMMSpecification specs = new HetPairHMMSpecification() {
       @Override public int nStates() { return logsub.length; }

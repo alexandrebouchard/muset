@@ -9,18 +9,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Splitter;
+
 import bayonet.regression.LabeledInstance;
 import bayonet.regression.MaxentClassifier.MaxentOptions;
 import briefj.BriefIO;
 import briefj.BriefMaps;
-import briefj.Indexer;
 import briefj.collections.Counter;
 import briefj.collections.UnorderedPair;
 import briefj.opt.Option;
 import briefj.opt.OptionSet;
 import briefj.run.Mains;
 import briefj.run.Results;
+import muset.Alphabet;
+import muset.Alphabet.Letter;
 import muset.MSAPoset;
+import muset.Sequence;
 import muset.SequenceId;
 import muset.hmm.HetPairHMM;
 import muset.pef.ExponentialFamily.ExponentialFamilyOptions;
@@ -55,8 +59,8 @@ public class AlignMain implements Runnable
     @Option(required = true)
     public File csvFile;
     
-    private Map<GroupId,Map<SequenceId,String>> data = null;
-    private Indexer<Character> indexer = null;
+    private Map<GroupId,Map<SequenceId,Sequence>> data = null;
+    private Alphabet alphabet = null;
     
     public Collection<GroupId> groupIds()
     {
@@ -64,13 +68,13 @@ public class AlignMain implements Runnable
       return data.keySet();
     }
     
-    public Indexer<Character> getIndexer()
+    public Alphabet getAlphabet()
     {
       ensureLoaded();
-      return indexer;
+      return alphabet;
     }
     
-    public Map<SequenceId,String> getSequences(GroupId id)
+    public Map<SequenceId,Sequence> getSequences(GroupId id)
     {
       ensureLoaded();
       return data.get(id);
@@ -80,17 +84,19 @@ public class AlignMain implements Runnable
     {
       if (data != null)
         return;
-      data = new LinkedHashMap<AlignMain.GroupId, Map<SequenceId,String>>();
-      indexer = new Indexer<Character>();
+      data = new LinkedHashMap<GroupId, Map<SequenceId,Sequence>>();
+      alphabet = new Alphabet();
       for (List<String> line : BriefIO.readLines(csvFile).splitCSV())
       {
         if (line.size() != 3)
-          throw new RuntimeException("There should be 3 fields: the group, the taxon, the string");
+          throw new RuntimeException("There should be 3 fields: the group, the taxon, and the string (space separated letters)");
         
-        String seq = line.get(2);
-        BriefMaps.getOrPutMap(data, new GroupId(line.get(0))).put(new SequenceId(line.get(1)), seq);
-        for (char c : seq.toCharArray())
-          indexer.addToIndex(c);
+        List<Letter> seqList = new ArrayList<Letter>();
+        Iterable<String> split = Splitter.onPattern("\\s+").split(line.get(2));
+        for (String letterStr : split)
+          seqList.add(alphabet.getLetter(letterStr));
+        BriefMaps.getOrPutMap(data, new GroupId(line.get(0))).put(new SequenceId(line.get(1)), new Sequence(alphabet, seqList));
+
       }
     }
 
@@ -98,7 +104,7 @@ public class AlignMain implements Runnable
     {
       ensureLoaded();
       Set<UnorderedPair<SequenceId, SequenceId>> result = new LinkedHashSet<UnorderedPair<SequenceId,SequenceId>>();
-      for (Map<SequenceId, String> datum : data.values())
+      for (Map<SequenceId, Sequence> datum : data.values())
         for (SequenceId key1 : datum.keySet())
           for (SequenceId key2 : datum.keySet())
             if (!key1.equals(key2))
@@ -114,7 +120,7 @@ public class AlignMain implements Runnable
     @Override
     public String toString()
     {
-      return "GroupId [groupName=" + groupName + "]";
+      return groupName;
     }
 
     private GroupId(String groupName)
@@ -164,18 +170,18 @@ public class AlignMain implements Runnable
     learnedModel.updateParameters();
   }
 
-  private void align(GroupId groupId, Map<SequenceId, String> datum)
+  private void align(GroupId groupId, Map<SequenceId, Sequence> datum)
   {
     Counter<Edge> edgePosteriors = new Counter<Edge>();
     // get all pairs
-    List<Map<SequenceId,String>> pairs = pairs(datum);
+    List<Map<SequenceId,Sequence>> pairs = pairs(datum);
     Counter<LabeledInstance<Input,Output>> suffStats = new Counter<LabeledInstance<Input,Output>>();
     // align them
-    for (Map<SequenceId,String> pair : pairs)
+    for (Map<SequenceId,Sequence> pair : pairs)
     {
       List<SequenceId> ids = new ArrayList<SequenceId>(pair.keySet());
       SequenceId topId = ids.get(0), botId = ids.get(1);
-      String top = pair.get(topId), bot = pair.get(botId);
+      Sequence top = pair.get(topId), bot = pair.get(botId);
       HetPairHMM hmm = learnedModel.getHMM(top, bot, topId, botId);
       learnedModel.addSufficientStatistics(suffStats, hmm, topId, botId);
       for (int botPos = 0; botPos < bot.length(); botPos++)
@@ -194,14 +200,14 @@ public class AlignMain implements Runnable
     BriefIO.write(new File(iterationSpecificOutput, "" + groupId + ".align.txt") , maxRecallMSA.toString());
   }
 
-  private List<Map<SequenceId, String>> pairs(Map<SequenceId, String> datum)
+  private List<Map<SequenceId, Sequence>> pairs(Map<SequenceId, Sequence> datum)
   {
     List<SequenceId> ids = new ArrayList<SequenceId>(datum.keySet());
-    List<Map<SequenceId, String>> result = new ArrayList<Map<SequenceId,String>>();
+    List<Map<SequenceId, Sequence>> result = new ArrayList<Map<SequenceId,Sequence>>();
     for (int i = 0; i < ids.size(); i++)
       for (int j = i + 1; j < ids.size(); j++)
       {
-        Map<SequenceId,String> pair = new LinkedHashMap<SequenceId, String>();
+        Map<SequenceId,Sequence> pair = new LinkedHashMap<SequenceId, Sequence>();
         pair.put(ids.get(i), datum.get(ids.get(i)));
         pair.put(ids.get(j), datum.get(ids.get(j)));
       }
@@ -212,7 +218,7 @@ public class AlignMain implements Runnable
   @Override
   public void run()
   {
-    learnedModel = ExponentialFamily.createExpfam(learningOptions , learnOptions, fo, dataset.taxaPairs(), dataset.getIndexer());
+    learnedModel = ExponentialFamily.createExpfam(learningOptions , learnOptions, fo, dataset.taxaPairs(), dataset.alphabet);
     
     for (int iter = 0; iter < nIterations; iter++)
       doIteration(iter);

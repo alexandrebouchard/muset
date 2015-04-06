@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import muset.Alphabet;
+import muset.Alphabet.Letter;
+import muset.Sequence;
 import briefj.Indexer;
 
 
@@ -11,14 +14,14 @@ import briefj.Indexer;
 public final class Model
 {
   public final StrTaxonSuffStat stSuffStat;
-  public final Indexer<Character> enc;
+  public final Alphabet enc;
   public final int nStates;
   public final Indexer<Object> stateIndexer;
   public final int startState, endState;
   public final int epsilon;
   public final int boundaryId;
-  public static final char BOUNDARY_SYMBOL = '#'; // used to mark the end of the strings
-  public Model(StrTaxonSuffStat stSuffStat, Indexer<Character> enc, Indexer<Object> stateIndexer, int startState, int endState)
+  public final Letter BOUNDARY_SYMBOL; // used to mark the end of the strings
+  public Model(StrTaxonSuffStat stSuffStat, Alphabet enc, Indexer<Object> stateIndexer, int startState, int endState)
   {
     this.stSuffStat = stSuffStat;
     this.enc = ensureContainsBoundarySymbol(enc);
@@ -26,16 +29,19 @@ public final class Model
     this.nStates = stateIndexer.size();
     this.startState = startState;
     this.endState = endState;
-    this.epsilon = enc.size();
-    this.boundaryId = enc.o2i(BOUNDARY_SYMBOL);
+    this.epsilon = this.enc.indexer.size();
+    this.BOUNDARY_SYMBOL = enc.getLetter(_BOUNDARY_SYMBOL_STR);
+    this.boundaryId = enc.indexer.o2i(BOUNDARY_SYMBOL);
   }
-  private static Indexer<Character> ensureContainsBoundarySymbol(
-      Indexer<Character> indexer)
+  
+  private static final String _BOUNDARY_SYMBOL_STR = "#";
+  private static Alphabet ensureContainsBoundarySymbol(
+      Alphabet alphabet)
   {
-    indexer = new Indexer<Character>(indexer.objectsList());
-    if (!indexer.containsObject(BOUNDARY_SYMBOL))
-      indexer.addToIndex(BOUNDARY_SYMBOL);
-    return indexer;
+    alphabet = new Alphabet(alphabet);
+    if (!alphabet.containsLetter(_BOUNDARY_SYMBOL_STR))
+      alphabet.getLetter(_BOUNDARY_SYMBOL_STR);//indexer.addToIndex(BOUNDARY_SYMBOL);
+    return alphabet;
   }
   public int epsilon() { return epsilon; }
   public List<Input> allInputs()
@@ -50,8 +56,8 @@ public final class Model
   {
     List<Output> result = new ArrayList<Output>();
     for (int s1 = 0; s1 < nStates; s1++)
-      for (int sym1 = 0; sym1< enc.size() + 1; sym1++)
-        for (int sym2 = 0; sym2 < enc.size() + 1; sym2++)
+      for (int sym1 = 0; sym1< enc.indexer.size() + 1; sym1++)
+        for (int sym2 = 0; sym2 < enc.indexer.size() + 1; sym2++)
           if (sym1 != epsilon() || sym2 != epsilon())
             result.add(new Output(s1, sym1, sym2, this));
     return result;
@@ -60,8 +66,8 @@ public final class Model
   public static final String SUB = "SUB";
   public static final String INS = "INS";
   public static final String DEL = "DEL";
-  public static Model stdModel(Indexer<Character> enc) { return stdBranchSpecificModel(enc, null); }
-  public static Model stdBranchSpecificModel(Indexer<Character> enc, StrTaxonSuffStat stss)
+  public static Model stdModel(Alphabet alphabet) { return stdBranchSpecificModel(alphabet, null); }
+  public static Model stdBranchSpecificModel(Alphabet alphabet, StrTaxonSuffStat stss)
   {
     Indexer<Object> stateIndexer = new Indexer<Object>();
     stateIndexer.addToIndex(SUB);
@@ -69,19 +75,19 @@ public final class Model
     stateIndexer.addToIndex(DEL);
     int specialState = stateIndexer.o2i(SUB);
     return new Model(stss,
-        enc, stateIndexer, specialState, specialState);
+        alphabet, stateIndexer, specialState, specialState);
   }
   
 
   
-  public int charIdAt(String str, int xpos, int dx)
+  public int charIdAt(Sequence str, int xpos, int dx)
   {
     if (dx == 0) return epsilon();
     else if (dx == 1) 
     {
-      int result = enc.o2i(str.charAt(xpos));
+      int result = enc.indexer.o2i(str.letterAt(xpos));
       if (result == -1)
-        throw new RuntimeException("Unknown character: " + str.charAt(xpos) +  " in sequence: " + str);
+        throw new RuntimeException("Unknown character: " + str.letterAt(xpos) +  " in sequence: " + str);
       return result;
     }
     else throw new RuntimeException();
@@ -105,24 +111,24 @@ public final class Model
 //      this.model = model;
       // from 0/1:
       {
-        for (int top = 0; top < model.enc.size(); top++)
-          for (int bot = 0; bot < model.enc.size(); bot++)
+        for (int top = 0; top < model.enc.indexer.size(); top++)
+          for (int bot = 0; bot < model.enc.indexer.size(); bot++)
             if (bothOrNeitherBound(bound, top, bot))
               from01.add(new Output(s0, top, bot,model));
-        for (int bot = 0; bot < model.enc.size(); bot++)
+        for (int bot = 0; bot < model.enc.indexer.size(); bot++)
           if (bot != bound)
             from01.add(new Output(s1, model.epsilon(), bot, model));
-        for (int top = 0; top < model.enc.size(); top++)
+        for (int top = 0; top < model.enc.indexer.size(); top++)
           if (top !=bound)
             from01.add(new Output(s2, top, model.epsilon(), model));
       }
       // from 2:
       {
-        for (int top = 0; top < model.enc.size(); top++)
-          for (int bot = 0; bot < model.enc.size(); bot++)
+        for (int top = 0; top < model.enc.indexer.size(); top++)
+          for (int bot = 0; bot < model.enc.indexer.size(); bot++)
             if (bothOrNeitherBound(bound, top, bot))
               from2.add(new Output(s0, top, bot,model));
-        for (int top = 0; top < model.enc.size(); top++)
+        for (int top = 0; top < model.enc.indexer.size(); top++)
           if (top != bound)
             from2.add(new Output(s2, top, model.epsilon(), model));
       }

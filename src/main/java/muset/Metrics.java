@@ -7,8 +7,6 @@ import muset.util.Edge;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
-import com.google.common.collect.Maps;
-
 
 
 public class Metrics
@@ -41,7 +39,7 @@ public class Metrics
   public static double getMeanSequenceLength(MSAPoset msa) 
   {
     SummaryStatistics result = new SummaryStatistics();
-    for (String seq : msa.sequences().values())
+    for (Sequence seq : msa.sequences().values())
       result.addValue(seq.length());
     return result.getMean();
   }
@@ -118,27 +116,27 @@ public class Metrics
     return 2 * (precision * recall) / (precision + recall);
   }
 
-  /**
-   * keeps only capitalized links, then capitalize everything
-   * @param msa
-   * @return
-   */
-  public static MSAPoset processBenchmarkReference(MSAPoset msa)
-  {  
-    MSAPoset result = new MSAPoset(msa.sequences);
-    result.disableLinearization();
-    for (MSAPoset.Column c : msa.linearizedColumns.keySet())
-    {
-      Map<SequenceId,Integer> processed = Maps.newLinkedHashMap();
-      for (SequenceId item : c.points.keySet())
-        if (Character.isUpperCase(msa.charAt(c, item)))
-          processed.put(item, c.points.get(item));
-        result.tryAdding(processed);
-    }
-    for (SequenceId sequenceId : result.allSequenceIds())
-      result.sequences.put(sequenceId, result.sequences.get(sequenceId).toUpperCase());
-    result.enableLinearization();
-    return result;
-  }
+//  /**
+//   * keeps only capitalized links, then capitalize everything
+//   * @param msa
+//   * @return
+//   */
+//  public static MSAPoset processBenchmarkReference(MSAPoset msa)
+//  {  
+//    MSAPoset result = new MSAPoset(msa.sequences);
+//    result.disableLinearization();
+//    for (MSAPoset.Column c : msa.linearizedColumns.keySet())
+//    {
+//      Map<SequenceId,Integer> processed = Maps.newLinkedHashMap();
+//      for (SequenceId item : c.points.keySet())
+//        if (Character.isUpperCase(msa.charAt(c, item)))
+//          processed.put(item, c.points.get(item));
+//        result.tryAdding(processed);
+//    }
+//    for (SequenceId sequenceId : result.allSequenceIds())
+//      result.sequences.put(sequenceId, result.sequences.get(sequenceId).toUpperCase());
+//    result.enableLinearization();
+//    return result;
+//  }
 
 }
