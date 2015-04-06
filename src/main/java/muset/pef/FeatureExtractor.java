@@ -52,13 +52,20 @@ public final class FeatureExtractor implements
     
     _features = new List[alphabet.indexer.size()];
     
-    for (Map<String,String> line : BriefIO.readLines(new File(options.featuresFile)).indexCSV())
+    boolean atLeastOneFeatMatch = false;
+    loop : for (Map<String,String> line : BriefIO.readLines(new File(options.featuresFile)).indexCSV())
     {
-      Letter phoneme = alphabet.getExistingLetter(line.get("input"));
+      String phonemeStr = line.get("input");
+      if (!alphabet.containsLetter(phonemeStr))
+        continue loop;
+      Letter phoneme = alphabet.getExistingLetter(phonemeStr);
       String features = line.get("features").replace("[ ", "").replace(" ]", "");
       List<String> parsedFeatures = Splitter.onPattern("\\s+").splitToList(features);
       _features[alphabet.indexer.o2i(phoneme)] = parsedFeatures;
+      atLeastOneFeatMatch = true;
     }
+    if (!atLeastOneFeatMatch)
+      throw new RuntimeException("No feature created. Make sure the alphabets match: " + alphabet.indexer + " vs " + options.featuresFile);
     
     return _features;
   }
@@ -78,13 +85,15 @@ public final class FeatureExtractor implements
           "(" +  instance.getLabel().botToChar() + "," + instance.getLabel().topToChar() + ")" ) ;
       result.incrementCount(emission, 1.0);
       
-      if (features != null)
+      if (features != null && 
+          instance.getLabel().topSymbol < features.length && 
+          instance.getLabel().botSymbol < features.length)
       {
         List<String> 
           feat1 = features[instance.getLabel().topSymbol],
           feat2 = features[instance.getLabel().botSymbol];
         
-        if (feat1 != null && feat2 != null)
+        if (feat1 != null && feat2 != null) // check needed because of boundary symbols
         {
           if (feat1.size() != feat2.size())
             result.incrementCount("featDimChange(" + Math.abs(feat1.size() - feat2.size()) + ")", 1.0);
