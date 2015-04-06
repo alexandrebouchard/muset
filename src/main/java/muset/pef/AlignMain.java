@@ -168,6 +168,8 @@ public class AlignMain implements Runnable
     for (GroupId groupId : dataset.groupIds())
       align(groupId, dataset.getSequences(groupId));
     learnedModel.updateParameters();
+    
+    learnedModel.saveWeights(new File(iterationSpecificOutput, "weights.txt"));
   }
 
   private void align(GroupId groupId, Map<SequenceId, Sequence> datum)
@@ -210,6 +212,7 @@ public class AlignMain implements Runnable
         Map<SequenceId,Sequence> pair = new LinkedHashMap<SequenceId, Sequence>();
         pair.put(ids.get(i), datum.get(ids.get(i)));
         pair.put(ids.get(j), datum.get(ids.get(j)));
+        result.add(pair);
       }
     return result;
   }

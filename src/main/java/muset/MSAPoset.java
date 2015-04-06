@@ -759,7 +759,7 @@ public class MSAPoset implements Serializable
       StringBuilder current = new StringBuilder();
       builders[row] = current;
     }
-    final String gap = Strings.repeat("-", padLength);
+    final String gap = "-" + Strings.repeat(" ", Math.max(0,padLength - 1));
     for (Column c : linearizedColumns())
       if (restriction == null || BriefCollections.intersects(restriction, c.points.keySet()))
       {
