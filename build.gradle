@@ -38,7 +38,7 @@ dependencies {
   compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.4'
   compile 'com.google.code.gson:gson:2.3.1'
   compile 'org.apache.commons:commons-math3:3.4.1'
-  compile group: 'ca.ubc.stat', name: 'bayonet', version: '2.3.15'
+  compile group: 'ca.ubc.stat', name: 'bayonet', version: '2.3.16'
 }
 
 task(tutorialj, dependsOn: ['build','testClasses'], type: JavaExec) {

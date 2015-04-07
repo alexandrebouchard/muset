@@ -169,10 +169,13 @@ public class Aligner implements Runnable
   
   private void doIteration(int iterationNumber)
   {
+    System.out.println("Starting iteration " + iterationNumber);
     iterationSpecificOutput = (Results.getFolderInResultFolder("iteration_" + iterationNumber));
     
     for (GroupId groupId : dataset.groupIds())
       align(groupId, dataset.getSequences(groupId));
+    
+    System.out.println("Alignment complete, starting parameter update");
     learnedModel.updateParameters();
     
     learnedModel.saveWeights(new File(iterationSpecificOutput, "weights.txt"));
