@@ -758,12 +758,16 @@ public class MSAPoset implements Serializable
     StringBuilder [] builders = new StringBuilder[printOrder.size()];
     
     int padLength = -1;
+    String suffix = "";
     for (SequenceId sequenceId : sequenceIdPrintOrder.keySet())
     {
-      padLength = Math.max(padLength, sequences.get(sequenceId).alphabet.getMaxLetterStringLength());
+      int currentPad = sequences.get(sequenceId).alphabet.getMaxLetterStringLength();
+      padLength = Math.max(padLength, currentPad);
       final int row = sequenceIdPrintOrder.get(sequenceId);
       StringBuilder current = new StringBuilder();
       builders[row] = current;
+      if (currentPad > 1)
+        suffix = "\t";
     }
     final String gap = "-" + Strings.repeat(" ", Math.max(0,padLength - 1));
     for (Column c : linearizedColumns())
@@ -774,7 +778,7 @@ public class MSAPoset implements Serializable
           String currentChar = c.points.keySet().contains(sequenceId)   ?
               "" + Alphabet.toPaddedString(sequences.get(sequenceId).letterAt(c.points.get(sequenceId)), padLength) :
               gap;
-          builders[sequenceIdPrintOrder.get(sequenceId)].append(currentChar);
+          builders[sequenceIdPrintOrder.get(sequenceId)].append(currentChar + suffix);
         }
       }
     return builders;

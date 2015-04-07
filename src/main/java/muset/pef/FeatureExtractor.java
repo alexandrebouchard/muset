@@ -32,10 +32,17 @@ public final class FeatureExtractor implements
   
   public static class FeatureOptions
   {
-    @Option public boolean useLongGaps = true;
-    @Option public boolean usePairSpecific = false;
-    @Option public String featuresFile = "";
-    @Option public boolean useLetterPairs = true;
+    @Option(gloss = "Use a feature that gives a different penalty to indels of one vs. more than one letters")
+    public boolean useLongGaps = true;
+    
+    @Option(gloss = "Create one set of feature that is specific to the pair of taxa being aligned in addition to the default behavior which ignores the identity of the pair of taxa being aligned")
+    public boolean addPairSpecific = false;
+    
+    @Option(gloss = "Path to a feature file. See README.md") 
+    public String featuresFile = "";
+    
+    @Option(gloss = "Use features that are specific to the letters being subsituted/deleted/inserted") 
+    public boolean useLetterPairs = true;
   }
   
   // phoneme index -> list of features
@@ -76,15 +83,14 @@ public final class FeatureExtractor implements
     List<String> [] features = features();
     final Counter<Object> result = new Counter<Object>();
     
-    for (String prefix : (options.usePairSpecific ? new String[]{"", sequenceIdPairsIndex.i2o(instance.getInput().strTaxSuffStat).toString() + ","} : new String[]{""}))
+    for (String prefix : (options.addPairSpecific ? new String[]{"", sequenceIdPairsIndex.i2o(instance.getInput().strTaxSuffStat).toString() + ","} : new String[]{""}))
     {
-    
       // pairs
       if (options.useLetterPairs)
       {
         final String emission = prefix + (instance.getLabel().topSymbol < instance.getLabel().botSymbol ?
-            "(" +  instance.getLabel().topToChar() + "," + instance.getLabel().botToChar() + ")" :
-            "(" +  instance.getLabel().botToChar() + "," + instance.getLabel().topToChar() + ")" ) ;
+            "pair(" +  toString(instance.getLabel().topToChar()) + "," + toString(instance.getLabel().botToChar()) + ")" :
+            "pair(" +  toString(instance.getLabel().botToChar()) + "," + toString(instance.getLabel().topToChar()) + ")" ) ;
         result.incrementCount(emission, 1.0);
       }
       
@@ -100,7 +106,7 @@ public final class FeatureExtractor implements
         {
           if (feat1.size() != feat2.size())
           {
-            result.incrementCount("featDimChange(" + Math.abs(feat1.size() - feat2.size()) + ")", 1.0);
+            result.incrementCount(prefix + "featDimChange(" + Math.abs(feat1.size() - feat2.size()) + ")", 1.0);
             for (int d = 0; d < feat1.size(); d++) result.incrementCount("featChange(" + d + "/" + feat1.size() + ")", 1.0);
             for (int d = 0; d < feat2.size(); d++) result.incrementCount("featChange(" + d + "/" + feat2.size() + ")", 1.0);
           }
@@ -109,7 +115,7 @@ public final class FeatureExtractor implements
             final int size = feat1.size();
             for (int d = 0; d < size; d++)
               if (!feat1.get(d).equals(feat2.get(d)))
-                result.incrementCount("featChange(" + d + "/" + size + ")", 1.0);
+                result.incrementCount(prefix + "featChange(" + d + "/" + size + ")", 1.0);
           }
         }
       }
@@ -119,17 +125,24 @@ public final class FeatureExtractor implements
         result.incrementCount(prefix + "selfsub", 1.0);
       
       // is it del, sub or ins?
-      result.incrementCount(prefix + "state1=" + collapseInDelStates(instance.getInput().state1), 1.0); 
+      result.incrementCount(prefix + "state(" + collapseInDelStates(instance.getInput().state1) + ")", 1.0); 
       
       // subsumes long ins, del
       if (options.useLongGaps)
-        result.incrementCount(prefix + "," + "state1=" + collapseInDelStates(instance.getInput().state1) + 
-            "&state2=" + collapseInDelStates(instance.getLabel().state2), 1.0); 
+        result.incrementCount(prefix + "statePair(" + collapseInDelStates(instance.getInput().state1) + 
+            "," + collapseInDelStates(instance.getLabel().state2) + ")", 1.0); 
     }
     
     return result;
   }
   
+  private String toString(Letter letter)
+  {
+    if (letter == null)
+      return "-";
+    return letter.toString();
+  }
+
   public static int collapseInDelStates(int s)
   {
     if (s == 0) return 0;
@@ -150,7 +163,7 @@ public final class FeatureExtractor implements
     @SuppressWarnings("unchecked")
     public SuffStat()
     {
-      if (options.usePairSpecific)
+      if (options.addPairSpecific)
         this.valuesIndexer.addAllToIndex(sequenceIdPairsIndex.objectsList());
       else
         this.valuesIndexer.addToIndex("NONE");
@@ -162,7 +175,7 @@ public final class FeatureExtractor implements
         SequenceId taxon1, 
         SequenceId taxon2)
     {
-      return new Extractor(options.usePairSpecific ?
+      return new Extractor(options.addPairSpecific ?
           sequenceIdPairsIndex.o2i(UnorderedPair.of(taxon1, taxon2)) :
           0);
     }

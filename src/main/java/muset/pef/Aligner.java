@@ -37,9 +37,6 @@ public class Aligner implements Runnable
 {
   @OptionSet(name = "data")
   public SequenceDataset dataset = new SequenceDataset();
-  
-  @Option
-  public int nIterations = 10;
 
   @OptionSet(name = "maxent")
   @SuppressWarnings("rawtypes")
@@ -49,9 +46,16 @@ public class Aligner implements Runnable
   public ExponentialFamilyOptions expFamOptions = new ExponentialFamilyOptions();
   
   @OptionSet(name = "features")
-  public FeatureOptions fo = new FeatureOptions();
+  public FeatureOptions featureOptions = new FeatureOptions();
   
-  @Option
+  @Option(gloss = "Number of EM training iterations.")
+  public int nIterations = 10;
+  
+  @Option(gloss = "By default (1), alignments that maximize recall are output (i.e. "
+      + "placing as many links as possible). Setting this option to larger value will "
+      + "create more alignment with different precision-recall tradeoffs. This is accomplished by "
+      + "varying the threshold for including links, which are varied as 1.0 - 2^{-i} where i is "
+      + "from 0 (inclusively) to rocGridSize (exclusively).")
   public int rocGridSize = 1;
   
   private ExponentialFamily learnedModel;
@@ -59,7 +63,8 @@ public class Aligner implements Runnable
 
   public static class SequenceDataset
   {
-    @Option(required = true)
+    @Option(required = true, gloss = "Path to a csv file containing the input data. "
+        + "See README.md and an example in src/test/resources/testdataset.csv")
     public File csvFile;
     
     private Map<GroupId,Map<SequenceId,Sequence>> data = null;
@@ -230,7 +235,7 @@ public class Aligner implements Runnable
   @Override
   public void run()
   {
-    learnedModel = ExponentialFamily.createExpfam(learningOptions , expFamOptions, fo, dataset.taxaPairs(), dataset.alphabet);
+    learnedModel = ExponentialFamily.createExpfam(learningOptions , expFamOptions, featureOptions, dataset.taxaPairs(), dataset.alphabet);
     
     for (int iter = 0; iter < nIterations; iter++)
       doIteration(iter);

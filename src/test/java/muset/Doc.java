@@ -1,21 +1,6 @@
 package muset;
 
-import java.io.File;
-import java.util.Map;
-
-import muset.util.Edge;
-
-import org.junit.Test;
-
-import briefj.BriefFiles;
-import briefj.collections.Counter;
-
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-
 import tutorialj.Tutorial;
-
-import static org.junit.Assert.*;
 
 public class Doc
 {
@@ -34,7 +19,7 @@ public class Doc
    * 3. Variational inference algorithms for MSAs 
    *   http://papers.nips.cc/paper/4036-variational-inference-over-combinatorial-spaces.pdf
    *  
-   * Note: as of Jul 7 2014, 1. is operational, while code for 2 and 3 is being transferred from a legacy SVN library.
+   * Note: as of Apr 6 2015, 1 and 2 are operational, while code for 3 is being transferred from a legacy SVN library.
    * 
    * Muset stands for MUltiple SEquence Toolkit.
    * 
@@ -84,95 +69,115 @@ public class Doc
   }
   
   /**
-   * Using MSAPoset
-   * --------------
+   * Using ``MSAPoset``
+   * ------------------
    */
-  @Tutorial(showLink = true, linkPrefix = "src/test/java/")
-  @Test
-  public void msaPosetTest()
-  {
-    // creating an alignment
-    Map<SequenceId,Sequence> sequences = Maps.newLinkedHashMap();
-    Alphabet alphabet = new Alphabet();
-    SequenceId 
-      seq0 = new SequenceId("seq-0"),
-      seq1 = new SequenceId("seq-1"),
-      seq2 = new SequenceId("seq-2");
-    sequences.put(seq0, Sequence.buildSimpleSequence(alphabet, "ACA"));
-    sequences.put(seq1,  Sequence.buildSimpleSequence(alphabet, "CC"));
-    sequences.put(seq2,  Sequence.buildSimpleSequence(alphabet, "ACC"));
-    MSAPoset align = new MSAPoset(sequences);
-    
-    // add links
-    // NB: tryAdding returns whether adding the link is allowed by MSA constraints
-    Edge 
-      e0 = new Edge(1, 0, seq0, seq1),
-      e1 = new Edge(0, 1, seq1, seq2);
-    assertTrue(align.tryAdding(e0));
-    assertTrue(align.tryAdding(e1));
-    
-    System.out.println(align);
-    /*
-      A-C-A-|seq-0
-      --CC--|seq-1
-      -AC--C|seq-2
-     */
-    
-    // check for the presence of a link
-    // note: transitive links are taken care automatically
-    Edge
-      e2 = new Edge(1, 1, seq0, seq2);
-    assertTrue(align.containsEdge(e2));
-    
-    // edges are not added if they violate MSA constraints
-    Edge
-      e3 = new Edge(0, 2, seq0, seq2);
-    assertFalse(align.tryAdding(e3));
-    
-    // deep clone
-    MSAPoset clone = new MSAPoset(align);
-    Edge 
-      e4 = new Edge(1, 2, seq1, seq2);
-    assertTrue(align.tryAdding(e4));
-    assertTrue(align.nEdges() == 4);
-    assertTrue(clone.nEdges() == 3);
-    
-    // create an alignment from edge scores
-    Counter<Edge> scores = new Counter<Edge>();
-    scores.setCount(e0, 100.0);
-    scores.setCount(e1, -5.0);
-    scores.setCount(e2, 10.5);
-    scores.setCount(e3, 1000.0);
-    scores.setCount(e4, -10.0);
-    MSAPoset msa = MSAPoset.maxRecallMSA(sequences, scores);
-    assertTrue(msa.nEdges() == 2);
-    
-    System.out.println(msa);
-    /*
-      --AC-A|seq-0
-      ---CC-|seq-1
-      ACC---|seq-2
-     */
-    
-    // compute alignment metrics
-    assertEquals(Metrics.edgeF1(msa, align), 1.0/3.0, 0.0);
-    
-    // remove links
-    align.split(align.column(seq0, 1), Sets.newHashSet(seq0));
-    assertTrue(align.nEdges() == 2);
-    
-    System.out.println(align);
-    /*
-      A-C--A|seq-0
-      ---CC-|seq-1
-      -A-CC-|seq-2
-     */
-    
-    // input and output to and from FASTA format
-    File tempFile = BriefFiles.createTempFile();
-    align.toFASTA(tempFile);
-    Alphabet alpha = new Alphabet();
-    MSAPoset readMSA = MSAPoset.parseFASTA(alpha, tempFile);
-    assertTrue(MSAPoset.deepEquals(readMSA, align));
-  }
+  @Tutorial(startTutorial = "README.md", showSource = false, nextStep = MSAPosetTest.class)
+  public void msaPosetTest() {}
+  
+  /**
+   * Using ``Aligner``
+   * -----------------
+   * 
+   * ``Aligner`` is a main function with two purposes:
+   * 
+   * 1. calling the machinery in ``muset.pef`` to train alignment weights 
+   * based on ``ExponentialFamily`` (i.e. GLM of maxent model for alignments, as in Chapter 
+   * Chapter 5 of
+   * [http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-153.pdf](http://www.eecs.berkeley.edu/Pubs/TechRpts/2010/EECS-2010-153.pdf)
+   * 2. creating alignments by using ``MSAPoset.consensus`` computed from the weights in (1)
+   * 
+   * #### Preparing the input
+   * 
+   * The program takes as input a dataset formatted as follows (see ``src/test/resources/testdataset.csv``):
+   * 
+   * ```
+   * homologous group 1,taxon1,firstLetter secondLetter
+   * homologous group 1,taxon2,thirdLetter firstLetter
+   * "homologous group, number 2",taxon3,secondLetter secondLetter
+   * "homologous group, number 2",taxon1,secondLetter firstLetter
+   * ```
+   * 
+   * Explanations of the format:
+   * 
+   * - The first column is an identifier for a group of homologous sequences (cognate id or protein family)
+   * - The second column is an identifier for the taxon (language, species, dialect, operational taxonomic unit)
+   * - The third column contains space separated letters (note that these 'letters' or character do not need to be
+   *   one letter long, or even have the same length.
+   * - Note that the format is fairly rigid beyond what is demonstrated here (avoid empty lines,
+   * headers, trailing spaces, etc)
+   *   
+   * #### Usage  
+   *   
+   * The aligner can then be invoked by calling from the root of the project (assuming you already built the
+   * application using ``build installApp``):
+   * 
+   * ```
+   * build/install/muset/bin/aligner -csvFile src/test/resources/testdataset.csv
+   * ```
+   * 
+   * #### Output
+   * 
+   * You can see the results in ``results/latest`` (and ``results/all`` for previous experiments), 
+   * where you will find, for each iteration:
+   * 
+   * - Weights (which can be used as initialization later on, see below)
+   * - Alignments, in the sub-directories ``alignment-txt`` (for visual inspection) and ``alignment-fasta`` 
+   *   (in the standard fasta format).
+   *   
+   * #### Options and customization
+   *   
+   * To get help on other functionalities, use:
+   * 
+   * ```
+   * build/install/muset/bin/aligner -help
+   * ```
+   * 
+   * In particular, the help contains information on the following additional options/functionalities:
+   * 
+   * - ``-initParams``: to load parameters from a previous run as initialization
+   * - ``-rocGridSize``: to create alignment with different trade-offs between precision and recall (by 
+   *   default, alignments produced maximize recall).
+   * - ``-useLongGaps``, ``-addPairSpecific``, ``-featuresFile``, ``-useLetterPairs`` to control the set of 
+   *   features (sufficient statistics) used for the alignment exponential family. More details on 
+   *   ``-featuresFile`` below.
+   *   
+   * #### Using features
+   * 
+   * An attractive aspect of muset's ``Aligner`` is that it is very simple to build letter-specific features used to share
+   * statistical strengths across different substitutions and indel operations. 
+   * 
+   * To do this, set the options ``-featuresFile`` to the path to a file such as the one below:
+   * 
+   * ```
+   * input,features
+   * firstLetter,[ f1v1 f2v1 f3v1 ]
+   * secondLetter,[ f1v1 f2v2 f3v1 ]
+   * thirdLetter,[ someFeatName someOtherFeatName ]
+   * fourthLetter,[ someFeatName yetAnotherOne ]
+   * ```
+   * 
+   * Note the mandatory header, the space after the opening bracket and before the closing bracket. The name of a
+   * letter-specific feature is arbitrary but should not contain spaces. 
+   * 
+   * This file is provided in ``src/test/resources/testfeatures.csv`` so its effect can be seen by looking that 
+   * the ``weight.txt`` file in ``results/latest/iteration_0/`` after calling:
+   * 
+   * ```
+   * build/install/muset/bin/aligner -csvFile src/test/resources/testdataset.csv -featuresFile src/test/resources/testfeatures.csv
+   * ```
+   * 
+   * A letter-specific feature are viewed 
+   * as a vector. Given a substitution between two letters (x,y), sufficient statistics are created by indicating which 
+   * letter-specific features are 
+   * changed between x and y. For example, and indicator ``featChange(1/2)`` means that  letter-specific feature number 1 
+   * (zero indexed) was changed between two letter specific vectors of length 2. When two 
+   * letter-specific vectors have different lengths, all letter-specific features of both are considered to be changed, 
+   * and a special extra feature is activated 
+   * to indicate that a change of feature dimensionality occurred. 
+   * 
+   */
+  @Tutorial(showSource = false)
+  public void alignerTest() {}
+  
 }

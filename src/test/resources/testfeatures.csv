@@ -1,0 +1,5 @@
+input,features
+firstLetter,[ f1v1 f2v1 f3v1 ]
+secondLetter,[ f1v1 f2v2 f3v1 ]
+thirdLetter,[ f4v1 f5v1 ]
+fourthLetter,[ f4v1 f5v2 ]

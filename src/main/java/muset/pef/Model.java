@@ -78,8 +78,6 @@ public final class Model
         alphabet, stateIndexer, specialState, specialState);
   }
   
-
-  
   public int charIdAt(Sequence str, int xpos, int dx)
   {
     if (dx == 0) return epsilon();

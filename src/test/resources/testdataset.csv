@@ -1,0 +1,4 @@
+homologous group 1,taxon1,firstLetter secondLetter
+homologous group 1,taxon2,thirdLetter firstLetter
+"homologous group, number 2",taxon3,secondLetter secondLetter
+"homologous group, number 2",taxon1,secondLetter firstLetter

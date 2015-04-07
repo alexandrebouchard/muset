@@ -1,5 +1,6 @@
 package muset;
 
+import java.io.File;
 import java.util.Map;
 import java.util.Set;
 
@@ -118,4 +119,42 @@ public class Metrics
     if (precision + recall == 0.0) return 0.0;
     return 2 * (precision * recall) / (precision + recall);
   }
+  
+  public static void main(String [] args)
+  {
+    if (args.length < 1 || args.length > 2)
+    {
+      System.err.println("One or two arguments: path to alignments in fasta format");
+      System.err.println("If two are provided, the first is truth, second is guess");
+      System.exit(1);
+    }
+    Alphabet alpha = new Alphabet();
+    MSAPoset 
+      first = MSAPoset.parseFASTA(alpha, new File(args[0])),
+      second = args.length == 2 ? MSAPoset.parseFASTA(alpha, new File(args[1])) : null;
+    printStats(first);
+    if (second != null)
+      printStats(second);
+    printComparison(first, second);
+  }
+
+  private static void printComparison(MSAPoset first, MSAPoset second)
+  {
+    System.out.println("columnRecall=" + columnRecall(first, second));
+    System.out.println("edgeRecall=" + edgeRecall(first, second));
+    System.out.println("edgePrecision=" + edgePrecision(first, second));
+    System.out.println("f1Score=" + edgeF1(first, second));
+  }
+
+  private static void printStats(MSAPoset msa)
+  {
+    System.out.println("identityStat=" + getIdentityStatistic(msa));
+    System.out.println("alignedStat=" + getAlignedStatistics(msa));
+    System.out.println("meanSeqLen=" + getMeanSequenceLength(msa));
+    System.out.println("---");
+    System.out.println(msa);
+    System.out.println("---");
+  }
+  
+  private Metrics() {}
 }

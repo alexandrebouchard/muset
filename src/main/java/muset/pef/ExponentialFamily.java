@@ -75,8 +75,14 @@ public final class ExponentialFamily
   
   public static class ExponentialFamilyOptions
   {
-    @Option public String initParams = ZERO;
-    @Option public String reguCenterParams = SAME;
+    @Option(gloss = "Path to an init parameters produced in a file called 'weights.txt' in the results folder. "
+        + "Use the string 'ZERO' to use a zero vector instead. Note that if a file is used, you should probably "
+        + "make sure that the set of feature options are the same (not checked explicitly).")
+    public String initParams = ZERO;
+    
+    @Option(gloss = "Center where the regularization parameters should be centered (e.g., output of simpler model)")
+    public String reguCenterParams = SAME;
+    
     public static final String SAME = "SAME";
     public static final String ZERO = "ZERO";
     public static final String INTERNAL = "INTERNAL";
