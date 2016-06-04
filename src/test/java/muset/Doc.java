@@ -21,7 +21,9 @@ public class Doc
    *  
    * Note: as of Apr 6 2015, 1 and 2 are operational, while code for 3 is being transferred from a legacy SVN library.
    * 
-   * Muset stands for MUltiple SEquence Toolkit.
+   * Muset stands for MUltiple SEquence Toolkit. 
+   * 
+   * Muset is released under a BSD license. 
    * 
    * 
    * Installation
@@ -72,7 +74,7 @@ public class Doc
    * Using ``MSAPoset``
    * ------------------
    */
-  @Tutorial(startTutorial = "README.md", showSource = false, nextStep = MSAPosetTest.class)
+  @Tutorial(showSource = false, nextStep = MSAPosetTest.class)
   public void msaPosetTest() {}
   
   /**
